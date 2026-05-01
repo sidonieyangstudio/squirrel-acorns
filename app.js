@@ -478,8 +478,9 @@
   let confettiSfxTimer = null;
   let bgIconsTimer = null;
   function spawnConfettiBatch(count) {
+    // 大顆原版尺寸（11-20px 圓 / 8x18-30px 長條），動畫 2.6-4.4s linear
     const screen = document.getElementById('screen-unlock');
-    const colors = ['#DA844F','#C78E78','#F5A3A4','#FBE5A8','#B8C99A','#ef7678','#FFF3EE','#e89a6a'];
+    const colors = ['#DA844F','#C78E78','#F5A3A4','#FBE5A8','#B8C99A','#ef7678'];
     for (let i = 0; i < count; i++) {
       const p = document.createElement('div');
       p.className = 'confetti-piece';
@@ -491,28 +492,25 @@
         width: isStrip ? '8px' : (11 + Math.random()*9) + 'px',
         height: isStrip ? (18 + Math.random()*12) + 'px' : (11 + Math.random()*9) + 'px',
         borderRadius: isStrip ? '2px' : '50%',
-        // 每顆 delay 0-3 秒，spawn 時間徹底打散；下降 7-12 秒
-        animation: `confetti-fall ${7 + Math.random()*5}s ${(Math.random()*3).toFixed(2)}s linear forwards`,
+        animation: `confetti-fall ${2.6 + Math.random()*1.8}s ${(Math.random()*0.4).toFixed(2)}s linear forwards`,
         opacity: 0
       });
-      p.style.setProperty('--sway', ((Math.random() * 100 - 50)) + 'px');
+      p.style.setProperty('--sway', ((Math.random()*120 - 60)) + 'px');
       screen.appendChild(p);
     }
-    // 清掉動畫已結束的（避免 DOM 累積）
     setTimeout(() => {
       const all = screen.querySelectorAll('.confetti-piece');
-      if (all.length > 400) {
-        for (let i = 0; i < all.length - 300; i++) all[i].remove();
+      if (all.length > 200) {
+        for (let i = 0; i < all.length - 150; i++) all[i].remove();
       }
-    }, 11000);
+    }, 5000);
   }
   function spawnConfetti() {
-    // 連續 spawn：每 1.6 秒丟一波，每波 50 顆，每顆 delay 0-3 秒散開
-    // 下降 7-12 秒，造成「畫面總是同時有 ~150 顆在不同位置漂落」
+    // 無縫連續：每 1.4 秒補 18 顆（< 最快下降 2.6s 確保畫面永遠有東西在飄）
     document.querySelectorAll('.confetti-piece').forEach(n => n.remove());
     if (confettiTimer) clearInterval(confettiTimer);
-    spawnConfettiBatch(60);  // 開場一大波
-    confettiTimer = setInterval(() => spawnConfettiBatch(50), 1600);
+    spawnConfettiBatch(28);    // 開場一大波
+    confettiTimer = setInterval(() => spawnConfettiBatch(18), 1400);
   }
   function spawnBgIcons() {
     const wrap = document.getElementById('bg-icons');

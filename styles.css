@@ -381,7 +381,7 @@ a { color: inherit; }
 #screen-unlock {
   background: linear-gradient(180deg, var(--light-pink) 0%, var(--pink-bg) 100%);
   text-align: center;
-  padding: calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 24px);
+  padding: calc(env(safe-area-inset-top) + 70px) 24px calc(env(safe-area-inset-bottom) + 60px);
   overflow: hidden;
   flex-direction: column;
   align-items: stretch;
@@ -468,7 +468,7 @@ a { color: inherit; }
   50%      { transform: scale(1.35) rotate(var(--rot, 0deg)); opacity: 0.85; }
 }
 
-/* confetti */
+/* confetti — Claude Design 原版規格 + 重力升級 */
 .confetti-piece {
   position: absolute; top: -30px;
   width: 10px; height: 10px;
@@ -478,9 +478,9 @@ a { color: inherit; }
 }
 @keyframes confetti-fall {
   0%   { transform: translateY(-30px) translateX(0) rotate(0deg); opacity: 0; }
-  4%   { opacity: 1; }
-  50%  { transform: translateY(60vh) translateX(var(--sway, 12px)) rotate(540deg); }
-  100% { transform: translateY(120vh) translateX(0) rotate(1080deg); opacity: 0.9; }
+  8%   { opacity: 1; }
+  60%  { transform: translateY(50vh)  translateX(calc(var(--sway, 0px) * 0.5)) rotate(360deg); }
+  100% { transform: translateY(130vh) translateX(var(--sway, 0px)) rotate(900deg); opacity: 0.85; }
 }
 
 /* ---------- screen 4: mine ---------- */
