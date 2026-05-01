@@ -159,7 +159,7 @@ a { color: inherit; }
   background: radial-gradient(circle, rgba(218,132,79,0.16) 0%, transparent 60%);
   border-radius: 50%;
 }
-.greet-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-top: 12px; }
+.greet-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-top: 12px; padding-right: 36px; }
 .greet-date {
   font-size: 12px; font-weight: 500; color: var(--lotus-deep);
   letter-spacing: 0.14em; text-transform: uppercase;
@@ -176,6 +176,8 @@ a { color: inherit; }
   border-radius: var(--pill);
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 13px; font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .squirrel-wrap {
   display: flex; justify-content: center; margin-top: 0; margin-bottom: -10px;
