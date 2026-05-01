@@ -17,7 +17,7 @@
     'ic-heart','ic-laugh','ic-popcorn','ic-rocket','ic-cart','ic-sparkles',
     'ic-wand','ic-volleyball','ic-star','ic-toolcase','ic-squirrel','ic-shrub',
     'ic-salad','ic-piano','ic-queen','ic-cherry','ic-caravan',
-    'ic-bookopen','ic-booka','ic-apple','ic-backpack','ic-dumbbell','ic-palette'
+    'ic-bookopen','ic-booka','ic-apple','ic-backpack','ic-dumbbell','ic-palette','ic-tent'
   ];
 
   const DEFAULT_STATE = {
@@ -517,7 +517,7 @@
   function spawnConfettiBatch(count) {
     // 彩帶感：70% 長條 / 30% 圓點，下降 4-6 秒，sway ±70px
     const screen = document.getElementById('screen-unlock');
-    const colors = ['#DA844F','#C78E78','#F5A3A4','#FBE5A8','#B8C99A','#ef7678'];
+    const colors = ['#DA844F','#C78E78','#F5A3A4','#FBE5A8','#B8C99A','#DB6D66'];
     for (let i = 0; i < count; i++) {
       const p = document.createElement('div');
       p.className = 'confetti-piece';
@@ -529,20 +529,20 @@
         width: isStrip ? '8px' : (11 + Math.random()*9) + 'px',
         height: isStrip ? (20 + Math.random()*14) + 'px' : (11 + Math.random()*9) + 'px',
         borderRadius: isStrip ? '2px' : '50%',
-        animation: `confetti-fall ${4 + Math.random()*2}s ${(Math.random()*0.3).toFixed(2)}s linear forwards`,
+        animation: `confetti-fall ${2.5 + Math.random()*1}s ${(Math.random()*0.3).toFixed(2)}s linear forwards`,
         opacity: 0
       });
       p.style.setProperty('--sway', ((Math.random()*140 - 70)) + 'px');
       screen.appendChild(p);
-      setTimeout(() => p.remove(), 6500);
+      setTimeout(() => p.remove(), 4000);
     }
   }
   function spawnConfetti() {
-    // 同時 ~35 顆彩帶：每 700ms 補 5 顆 × 平均停留 5s = ~35 顆；無縫接續
+    // 同時 ~35 顆彩帶：每 600ms 補 7 顆 × 平均停留 3s = ~35 顆；無縫接續（落下 3 秒比較快）
     document.querySelectorAll('.confetti-piece').forEach(n => n.remove());
     if (confettiTimer) clearInterval(confettiTimer);
-    spawnConfettiBatch(8);
-    confettiTimer = setInterval(() => spawnConfettiBatch(5), 700);
+    spawnConfettiBatch(10);
+    confettiTimer = setInterval(() => spawnConfettiBatch(7), 600);
   }
   function spawnBgIcons() {
     const wrap = document.getElementById('bg-icons');
@@ -630,7 +630,15 @@
     save();
 
     if (!wasDone) {
-      // 勾選 → 飛 N 顆橡實（依 habit.points） + 叮 N 聲 + 數字跳
+      // 1. 立即改顏色（不等動畫跑完）
+      const habitRow = sourceEl ? sourceEl.closest('.habit') : null;
+      if (habitRow) habitRow.classList.add('done');
+      if (sourceEl) {
+        sourceEl.classList.add('done');
+        sourceEl.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>';
+      }
+
+      // 2. 顏色改完 → 飛 N 顆橡實 + 叮 N 聲 + 數字跳
       const n = Math.max(1, habit.points);
       ding(n);
       const dockEl = document.querySelector('.dock-label svg');
@@ -643,7 +651,7 @@
         void curEl.offsetWidth;
         curEl.classList.add('bump');
       }
-      // 等所有飛橡實動畫跑完再 render
+      // 3. 動畫跑完才 render（保持顏色＋進度數字穩定）
       setTimeout(() => renderToday(), 850 + n * 90 + 200);
     } else {
       renderToday();
@@ -732,8 +740,8 @@
         </div>
         ${iconPicker(habit.icon)}
         <div class="modal-actions" style="margin-top:18px;">
-          ${!isNew ? '<button type="button" class="btn btn-icon btn-danger btn-trash" data-delete-habit><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' : ''}
           <button type="button" class="btn" data-cancel>取消</button>
+          ${!isNew ? '<button type="button" class="btn btn-icon btn-danger btn-trash" data-delete-habit><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' : ''}
           <button type="submit" class="btn btn-primary">儲存</button>
         </div>
       </form>
@@ -786,8 +794,8 @@
         </div>
         ${iconPicker(reward.icon)}
         <div class="modal-actions" style="margin-top:18px;">
-          ${!isNew ? '<button type="button" class="btn btn-icon btn-danger btn-trash" data-delete-reward><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' : ''}
           <button type="button" class="btn" data-cancel>取消</button>
+          ${!isNew ? '<button type="button" class="btn btn-icon btn-danger btn-trash" data-delete-reward><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' : ''}
           <button type="submit" class="btn btn-primary">儲存</button>
         </div>
       </form>
@@ -1232,7 +1240,7 @@
           <button type="submit" class="btn btn-primary">儲存</button>
         </div>
       </form>
-      <hr style="margin: 26px 0 16px; border: 0; border-top: 1.5px dashed rgba(239,118,120,0.4);">
+      <hr style="margin: 26px 0 16px; border: 0; border-top: 1.5px dashed rgba(219,109,102,0.4);">
       <div class="danger-zone">
         <div class="danger-zone-title">⚠ 危險區（不可復原）</div>
         <p class="danger-zone-sub">清掉所有點數、習慣、獎勵、紀錄，App 回到第一次打開的狀態。</p>

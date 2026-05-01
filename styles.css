@@ -16,7 +16,7 @@
   --ink: #5E5453;
   --ink-soft: #7a706e;
   --ink-muted: #9c938f;
-  --pink: #ef7678;
+  --pink: #DB6D66;
   --cheek: #F5A3A4;
   --honey: #FBE5A8;
   --moss: #B8C99A;
@@ -125,7 +125,7 @@ a { color: inherit; }
 }
 .btn-danger {
   background: var(--pink); color: var(--white); border-color: transparent;
-  box-shadow: 0 8px 20px rgba(239, 118, 120, 0.24);
+  box-shadow: 0 8px 20px rgba(219, 109, 102, 0.24);
 }
 .btn-trash { width: 50px; height: 50px; padding: 0; border-radius: 16px; }
 
@@ -296,7 +296,7 @@ a { color: inherit; }
   border-bottom-left-radius: 32px; border-bottom-right-radius: 32px;
   padding: calc(env(safe-area-inset-top) + 18px) 18px 18px;
 }
-.page-header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.page-header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 40px; }
 .page-header-row .btn {
   width: 40px; height: 40px; padding: 0; border-radius: 14px;
   background: var(--white); color: var(--ink); flex-shrink: 0;
@@ -709,22 +709,20 @@ a { color: inherit; }
   width: 36px; height: 36px;
   padding: 0;
   border-radius: 12px;
-  background: rgba(255,255,255,0.78);
-  border: 1.5px solid rgba(94,84,83,0.25);
+  background: var(--white);
+  border: 1.5px solid rgba(94,84,83,0.18);
   color: var(--ink-soft);
   display: grid; place-items: center;
   z-index: 50;
   cursor: pointer;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition: all .2s var(--ease);
+  box-shadow: 0 2px 6px rgba(94,84,83,0.12);
+  transition: transform .15s var(--ease), box-shadow .15s var(--ease);
 }
-.parent-toggle:active { transform: scale(0.92); }
+.parent-toggle:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(94,84,83,0.10); }
 body.parent-mode .parent-toggle {
   background: var(--orange);
   color: var(--white);
-  border-color: var(--ink);
-  box-shadow: 0 2px 0 var(--ink);
+  border-color: rgba(94,84,83,0.25);
 }
 .parent-toggle .ic-unlock { display: none; }
 body.parent-mode .parent-toggle .ic-lock { display: none; }
@@ -734,7 +732,7 @@ body.parent-mode .parent-toggle .ic-unlock { display: block; }
 }
 @keyframes long-press-pulse {
   0%   { transform: scale(1.0); background: rgba(255,255,255,0.78); border-color: rgba(94,84,83,0.25); color: var(--ink-soft); }
-  50%  { transform: scale(1.10); background: #ef7678;                 border-color: var(--ink); color: var(--white); box-shadow: 0 2px 0 var(--ink); }
+  50%  { transform: scale(1.10); background: #DB6D66;                 border-color: var(--ink); color: var(--white); box-shadow: 0 2px 0 var(--ink); }
   100% { transform: scale(1.25); background: var(--orange);           border-color: var(--ink); color: var(--white); box-shadow: 0 3px 0 var(--ink); }
 }
 
@@ -758,7 +756,7 @@ body.parent-mode .parent-banner { display: block !important; }
 body.parent-mode #app { padding-top: 24px; }
 
 /* 危險區（清掉全部資料）只在家長設定 modal 內顯示 */
-.danger-zone { text-align: center; padding: 14px; border: 1.5px dashed rgba(239,118,120,0.5); border-radius: 14px; background: rgba(239,118,120,0.06); }
+.danger-zone { text-align: center; padding: 14px; border: 1.5px dashed rgba(219,109,102,0.5); border-radius: 14px; background: rgba(219,109,102,0.06); }
 .danger-zone-title { font-size: 13px; font-weight: 800; color: var(--pink); letter-spacing: 0.05em; margin-bottom: 6px; }
 .danger-zone-sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; line-height: 1.5; }
 .danger-zone-btn { width: 100%; }
