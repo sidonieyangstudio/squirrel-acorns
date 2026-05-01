@@ -491,8 +491,8 @@
         width: isStrip ? '8px' : (11 + Math.random()*9) + 'px',
         height: isStrip ? (18 + Math.random()*12) + 'px' : (11 + Math.random()*9) + 'px',
         borderRadius: isStrip ? '2px' : '50%',
-        // 慢一點：6-10 秒掉落
-        animation: `confetti-fall ${6 + Math.random()*4}s ${Math.random()*0.5}s linear forwards`,
+        // 每顆 delay 0-3 秒，spawn 時間徹底打散；下降 7-12 秒
+        animation: `confetti-fall ${7 + Math.random()*5}s ${(Math.random()*3).toFixed(2)}s linear forwards`,
         opacity: 0
       });
       p.style.setProperty('--sway', ((Math.random() * 100 - 50)) + 'px');
@@ -507,17 +507,12 @@
     }, 11000);
   }
   function spawnConfetti() {
-    // 一輪三波：90 → 55 → 30（多一點），3.2 秒一波（拉長間距更分散）
+    // 連續 spawn：每 1.6 秒丟一波，每波 50 顆，每顆 delay 0-3 秒散開
+    // 下降 7-12 秒，造成「畫面總是同時有 ~150 顆在不同位置漂落」
     document.querySelectorAll('.confetti-piece').forEach(n => n.remove());
     if (confettiTimer) clearInterval(confettiTimer);
-    const waves = [90, 55, 30];
-    let i = 0;
-    const fire = () => {
-      spawnConfettiBatch(waves[i % waves.length]);
-      i++;
-    };
-    fire();
-    confettiTimer = setInterval(fire, 3200);
+    spawnConfettiBatch(60);  // 開場一大波
+    confettiTimer = setInterval(() => spawnConfettiBatch(50), 1600);
   }
   function spawnBgIcons() {
     const wrap = document.getElementById('bg-icons');
