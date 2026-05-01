@@ -383,11 +383,12 @@ a { color: inherit; }
   text-align: center;
   padding: calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 24px);
   overflow: hidden;
-  display: flex !important;
   flex-direction: column;
   align-items: stretch;
   min-height: 100dvh;
 }
+#screen-unlock:not([hidden]) { display: flex; }
+.screen[hidden] { display: none !important; }
 .unlock-top { position: relative; z-index: 10; flex-shrink: 0; text-align: center; }
 .unlock-mid { position: relative; z-index: 10; flex: 1; display: flex; align-items: center; justify-content: center; }
 .unlock-bottom { position: relative; z-index: 10; flex-shrink: 0; }
