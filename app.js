@@ -30,14 +30,19 @@
       { id: h(), title: '洗衣服＋烘衣服',     icon: 'ic-toolcase', points: 3 },
       { id: h(), title: '安靜 1 小時 A',      icon: 'ic-shrub',    points: 4 },
       { id: h(), title: '友善 1 小時 A',      icon: 'ic-heart',    points: 4 },
-      { id: h(), title: '不生氣 1 小時 A',    icon: 'ic-laugh',    points: 4 }
+      { id: h(), title: '不生氣 1 小時 A',    icon: 'ic-laugh',    points: 4 },
+      { id: h(), title: '學校表現 A',         icon: 'ic-star',     points: 5 },
+      { id: h(), title: '學校表現 B',         icon: 'ic-apple',    points: 2 }
     ],
     rewards: [
-      { id: h(), title: '起司餅乾',     desc: '一包小零食',     icon: 'ic-candy',    cost: 10 },
-      { id: h(), title: '動物小盲包',   desc: '隨機可愛小物',   icon: 'ic-sparkles', cost: 20 },
-      { id: h(), title: '禮物箱',       desc: '驚喜小禮物一份', icon: 'ic-gift',     cost: 30 },
-      { id: h(), title: '玩具鑽石',     desc: '收藏閃亮亮寶石', icon: 'ic-gem',      cost: 50 },
-      { id: h(), title: '材料大禮包',   desc: '美術材料一盒',   icon: 'ic-palette',  cost: 80 }
+      { id: h(), title: '起司餅乾',           desc: '一包小零食',                   icon: 'ic-candy',    cost: 10 },
+      { id: h(), title: '動物小盲包',         desc: '隨機可愛小物',                 icon: 'ic-sparkles', cost: 20 },
+      { id: h(), title: '3D 列印小玩具',      desc: '媽媽印一個小玩具給你',         icon: 'ic-rocket',   cost: 25 },
+      { id: h(), title: '禮物箱',             desc: '驚喜小禮物一份',               icon: 'ic-gift',     cost: 30 },
+      { id: h(), title: '玩具鑽石',           desc: '收藏閃亮亮寶石',               icon: 'ic-gem',      cost: 50 },
+      { id: h(), title: '材料大禮包',         desc: '美術材料一盒',                 icon: 'ic-palette',  cost: 80 },
+      { id: h(), title: '皮克品布偶',         desc: '隨機抽一隻皮克品布偶',         icon: 'ic-cat',      cost: 100 },
+      { id: h(), title: '爸媽選的驚喜包',     desc: '打開才知道裡面是什麼驚喜',     icon: 'ic-cart',     cost: 120 }
     ],
     points: 0,                       // 累積總橡實
     log: {},                         // { '2025-05-01': { habitId: true, ... } }
