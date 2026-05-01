@@ -1,5 +1,5 @@
-// Simple PWA service worker — cache-first for shell, network-fallback for the rest
-const CACHE = 'squirrel-points-v1';
+// PWA service worker — network-first（線上永遠抓最新，離線回 cache）
+const CACHE = 'squirrel-points-v2';
 const SHELL = [
   './',
   './index.html',
@@ -27,11 +27,12 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // network-first：先抓 server 最新版，失敗才回 cache（離線也能用）
   e.respondWith(
-    caches.match(req).then(cached => cached || fetch(req).then(res => {
+    fetch(req).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(req, copy)).catch(()=>{});
       return res;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(req).then(cached => cached || caches.match('./index.html')))
   );
 });

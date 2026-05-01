@@ -41,7 +41,8 @@
     log: {},                         // { '2025-05-01': { habitId: true, ... } }
     streak: 0,
     lastActiveDate: null,
-    redeemed: []                     // [{ id, rewardId, title, icon, cost, date }]
+    redeemed: [],                    // [{ id, rewardId, title, icon, cost, date }]
+    parentPin: ''                    // 家長密碼 4 位數字（空 = 未設定）
   };
 
   function h() { return Math.random().toString(36).slice(2, 9); }
@@ -201,78 +202,111 @@
   function rewardSfx() {
     jsfxrPlay(SFX_REWARD, 1, 1.2);
   }
-  /* ---------- 角子老虎機中獎音效（jackpot fanfare）+ 歡呼 ---------- */
+  /* ---------- 賭城贏錢音效套組：jackpot 三輪琶音 + 金幣嘩啦 + 鈴鐺 + 拉長歡呼 ---------- */
   function jackpotFanfare() {
     try {
       const ctx = ensureAudio();
       const now = ctx.currentTime;
-      // C-E-G-C 大三和弦快速琶音 + 三角波（jackpot 經典）
-      // 跑兩輪上行 + 一輪下行高音收尾
+      // 三輪上行琶音 C-E-G-C，一輪比一輪高
       const notes = [
-        // 第一輪上行 C5 E5 G5 C6
-        523.25, 659.25, 783.99, 1046.50,
-        // 第二輪上行 E5 G5 C6 E6
-        659.25, 783.99, 1046.50, 1318.51,
-        // 高音收尾 G6 C7
-        1567.98, 2093.00
+        523.25, 659.25, 783.99, 1046.50,            // 第一輪 C5
+        659.25, 783.99, 1046.50, 1318.51,           // 第二輪
+        783.99, 1046.50, 1318.51, 1567.98,          // 第三輪
+        1567.98, 2093.00, 2637.02                   // 高音收尾 G6 C7 E7
       ];
       notes.forEach((freq, i) => {
-        const t0 = now + i * 0.085;
-        // 三角波主音
+        const t0 = now + i * 0.075;
         const osc = ctx.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.value = freq;
-        // 方波八度低音（+jackpot 8-bit 感）
+        osc.type = 'triangle'; osc.frequency.value = freq;
         const osc2 = ctx.createOscillator();
-        osc2.type = 'square';
-        osc2.frequency.value = freq / 2;
+        osc2.type = 'square'; osc2.frequency.value = freq / 2;
         const gain = ctx.createGain();
         gain.gain.setValueAtTime(0, t0);
-        gain.gain.linearRampToValueAtTime(0.18, t0 + 0.005);
+        gain.gain.linearRampToValueAtTime(0.20, t0 + 0.005);
         gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
         const gain2 = ctx.createGain();
         gain2.gain.setValueAtTime(0, t0);
-        gain2.gain.linearRampToValueAtTime(0.06, t0 + 0.005);
+        gain2.gain.linearRampToValueAtTime(0.07, t0 + 0.005);
         gain2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
         osc.connect(gain).connect(ctx.destination);
         osc2.connect(gain2).connect(ctx.destination);
         osc.start(t0); osc.stop(t0 + 0.2);
         osc2.start(t0); osc2.stop(t0 + 0.2);
       });
-      // 收尾大鈸/亮光：1.2 秒長尾音
-      const finalT = now + notes.length * 0.085 + 0.05;
+      // 高音長尾收尾：1.5s
+      const finalT = now + notes.length * 0.075 + 0.05;
       [2093, 2637, 3136].forEach((freq, i) => {
         const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
+        osc.type = 'sine'; osc.frequency.value = freq;
         const gain = ctx.createGain();
         gain.gain.setValueAtTime(0, finalT);
-        gain.gain.linearRampToValueAtTime(0.12 - i*0.03, finalT + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, finalT + 1.2);
+        gain.gain.linearRampToValueAtTime(0.13 - i*0.03, finalT + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, finalT + 1.5);
         osc.connect(gain).connect(ctx.destination);
-        osc.start(finalT); osc.stop(finalT + 1.3);
+        osc.start(finalT); osc.stop(finalT + 1.6);
+      });
+    } catch (e) {}
+  }
+  function coinShower() {
+    // 金幣嘩啦：連續 1.4 秒 18 個短促高音（pickupCoin 配方升 pitch 隨機）
+    for (let i = 0; i < 18; i++) {
+      setTimeout(() => {
+        jsfxrPlay(SFX_HABIT, 1.0 + Math.random() * 1.5, 0.7);
+      }, i * 75 + Math.random() * 30);
+    }
+  }
+  function bellRing() {
+    // 鈴鐺 ding-dong-ding 三聲（C6 G6 C7 三度音程）
+    try {
+      const ctx = ensureAudio();
+      const base = ctx.currentTime + 0.4;
+      [1046.50, 1567.98, 2093.00, 1567.98].forEach((freq, i) => {
+        const t0 = base + i * 0.18;
+        const osc = ctx.createOscillator();
+        osc.type = 'sine'; osc.frequency.value = freq;
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sine'; osc2.frequency.value = freq * 2.01; // 微微失諧泛音 = 鈴鐺感
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.16, t0 + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.85);
+        const gain2 = ctx.createGain();
+        gain2.gain.setValueAtTime(0, t0);
+        gain2.gain.linearRampToValueAtTime(0.08, t0 + 0.005);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+        osc.connect(gain).connect(ctx.destination);
+        osc2.connect(gain2).connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + 0.9);
+        osc2.start(t0); osc2.stop(t0 + 0.75);
       });
     } catch (e) {}
   }
   function cheerCrowd() {
-    // 歡呼：白噪音 + 帶通濾波模擬人群「嘩～」
+    // 歡呼拉長到 3.5 秒，三波交疊：先漸進、中段最大、尾段拉長
     try {
       const ctx = ensureAudio();
-      const dur = 1.6;
+      const dur = 3.5;
       const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
       const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      // 加調變的白噪音：每秒會有自然起伏（人群擺動）
+      for (let i = 0; i < data.length; i++) {
+        const t = i / ctx.sampleRate;
+        const wobble = 0.6 + 0.4 * Math.sin(t * 6) + 0.3 * Math.sin(t * 13);
+        data[i] = (Math.random() * 2 - 1) * wobble;
+      }
       const src = ctx.createBufferSource();
       src.buffer = buf;
       const bp = ctx.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.value = 1200;
-      bp.Q.value = 0.8;
+      bp.frequency.value = 1100;
+      bp.Q.value = 0.6;
       const gain = ctx.createGain();
-      const now = ctx.currentTime + 0.3;  // 歡呼比中獎晚一點點
+      const now = ctx.currentTime + 0.5;
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.18, now + 0.25);
-      gain.gain.linearRampToValueAtTime(0.22, now + 0.7);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.4);   // 漸進
+      gain.gain.linearRampToValueAtTime(0.26, now + 1.4);   // 中段高潮
+      gain.gain.linearRampToValueAtTime(0.22, now + 2.2);
+      gain.gain.linearRampToValueAtTime(0.16, now + 2.8);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
       src.connect(bp).connect(gain).connect(ctx.destination);
       src.start(now);
@@ -280,9 +314,10 @@
     } catch (e) {}
   }
   function confettiSfx() {
-    // 撒花 = 角子老虎機中獎音 + 後段疊歡呼
+    // 賭城贏錢音：jackpot 琶音 + 金幣嘩啦 + 鈴鐺（不疊人群歡呼，避免怪聲）
     jackpotFanfare();
-    cheerCrowd();
+    setTimeout(coinShower, 200);
+    setTimeout(bellRing, 800);
   }
 
   /* ---------- 飛橡實動畫 + 數字跳動 ---------- */
@@ -478,39 +513,34 @@
   let confettiSfxTimer = null;
   let bgIconsTimer = null;
   function spawnConfettiBatch(count) {
-    // 大顆原版尺寸（11-20px 圓 / 8x18-30px 長條），動畫 2.6-4.4s linear
+    // 彩帶感：70% 長條 / 30% 圓點，下降 4-6 秒，sway ±70px
     const screen = document.getElementById('screen-unlock');
     const colors = ['#DA844F','#C78E78','#F5A3A4','#FBE5A8','#B8C99A','#ef7678'];
     for (let i = 0; i < count; i++) {
       const p = document.createElement('div');
       p.className = 'confetti-piece';
       const c = colors[i % colors.length];
-      const isStrip = Math.random() > 0.5;
+      const isStrip = Math.random() > 0.3;
       Object.assign(p.style, {
         left: (Math.random() * 100) + '%',
         background: c,
         width: isStrip ? '8px' : (11 + Math.random()*9) + 'px',
-        height: isStrip ? (18 + Math.random()*12) + 'px' : (11 + Math.random()*9) + 'px',
+        height: isStrip ? (20 + Math.random()*14) + 'px' : (11 + Math.random()*9) + 'px',
         borderRadius: isStrip ? '2px' : '50%',
-        animation: `confetti-fall ${2.6 + Math.random()*1.8}s ${(Math.random()*0.4).toFixed(2)}s linear forwards`,
+        animation: `confetti-fall ${4 + Math.random()*2}s ${(Math.random()*0.3).toFixed(2)}s linear forwards`,
         opacity: 0
       });
-      p.style.setProperty('--sway', ((Math.random()*120 - 60)) + 'px');
+      p.style.setProperty('--sway', ((Math.random()*140 - 70)) + 'px');
       screen.appendChild(p);
+      setTimeout(() => p.remove(), 6500);
     }
-    setTimeout(() => {
-      const all = screen.querySelectorAll('.confetti-piece');
-      if (all.length > 200) {
-        for (let i = 0; i < all.length - 150; i++) all[i].remove();
-      }
-    }, 5000);
   }
   function spawnConfetti() {
-    // 無縫連續：每 1.4 秒補 18 顆（< 最快下降 2.6s 確保畫面永遠有東西在飄）
+    // 同時 ~35 顆彩帶：每 700ms 補 5 顆 × 平均停留 5s = ~35 顆；無縫接續
     document.querySelectorAll('.confetti-piece').forEach(n => n.remove());
     if (confettiTimer) clearInterval(confettiTimer);
-    spawnConfettiBatch(28);    // 開場一大波
-    confettiTimer = setInterval(() => spawnConfettiBatch(18), 1400);
+    spawnConfettiBatch(8);
+    confettiTimer = setInterval(() => spawnConfettiBatch(5), 700);
   }
   function spawnBgIcons() {
     const wrap = document.getElementById('bg-icons');
@@ -1036,6 +1066,124 @@
   document.getElementById('modal-backdrop').addEventListener('click', (e) => {
     if (e.target.id === 'modal-backdrop') closeModal();
   });
+
+  /* ---------- 家長模式 ---------- */
+  let parentMode = false;  // runtime only, 重開 PWA 自動回兒童
+
+  function setParentMode(on) {
+    parentMode = on;
+    document.body.classList.toggle('parent-mode', on);
+    document.body.classList.toggle('child-mode', !on);
+    const banner = document.getElementById('parent-banner');
+    if (banner) banner.hidden = !on;
+  }
+  function shakeModal() {
+    const m = document.getElementById('modal');
+    if (!m) return;
+    m.style.animation = 'none';
+    void m.offsetWidth;
+    m.style.animation = 'shake .35s ease';
+    setTimeout(() => { m.style.animation = ''; }, 400);
+  }
+  function openParentModal() {
+    if (parentMode) {
+      // 切回兒童模式（不需密碼）
+      setParentMode(false);
+      toast('回到孩子模式 ✦');
+      return;
+    }
+    if (!state.parentPin) {
+      // 第一次：引導設定（可略過）
+      openModal(`
+        <h3 class="modal-title">第一次設定家長模式</h3>
+        <p class="modal-sub">設一個 4 位數字密碼，孩子就不能改設定。也可以選「不設密碼」直接進去 ✦</p>
+        <form id="pin-setup-form">
+          <div class="field">
+            <label>新密碼（4 位數字）</label>
+            <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="例：1234" autofocus />
+          </div>
+          <div class="modal-actions" style="margin-top:18px;">
+            <button type="button" class="btn" data-skip>不設密碼，直接進入</button>
+            <button type="submit" class="btn btn-primary">儲存並進入</button>
+          </div>
+        </form>
+      `);
+      const root = document.getElementById('modal');
+      root.querySelector('[data-skip]').onclick = () => {
+        closeModal(); setParentMode(true); toast('已進入家長模式 ★');
+      };
+      root.querySelector('#pin-setup-form').onsubmit = (e) => {
+        e.preventDefault();
+        const pin = e.target.pin.value.trim();
+        if (!/^\d{4}$/.test(pin)) { shakeModal(); return; }
+        state.parentPin = pin; save();
+        closeModal(); setParentMode(true); toast('密碼已設好，進入家長模式 ★');
+      };
+      return;
+    }
+    // 已設密碼：輸入驗證
+    openModal(`
+      <h3 class="modal-title">輸入家長密碼</h3>
+      <p class="modal-sub">4 位數字</p>
+      <form id="pin-check-form">
+        <div class="field">
+          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autofocus placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:0.5em;" />
+        </div>
+        <div class="modal-actions" style="margin-top:18px;">
+          <button type="button" class="btn" data-cancel>取消</button>
+          <button type="submit" class="btn btn-primary">送出</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-forget style="flex:0;font-size:11px;padding:6px 10px;">忘記密碼？</button>
+        </div>
+      </form>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('[data-forget]').onclick = () => {
+      if (confirm('忘記密碼會清掉舊密碼，需要重新設定一個新的。要繼續嗎？')) {
+        state.parentPin = ''; save();
+        closeModal(); openParentModal();
+      }
+    };
+    root.querySelector('#pin-check-form').onsubmit = (e) => {
+      e.preventDefault();
+      const pin = e.target.pin.value.trim();
+      if (pin === state.parentPin) {
+        closeModal(); setParentMode(true); toast('進入家長模式 ★');
+      } else {
+        shakeModal();
+        e.target.pin.value = '';
+        e.target.pin.focus();
+      }
+    };
+  }
+  function openChangePinModal() {
+    openModal(`
+      <h3 class="modal-title">改家長密碼</h3>
+      <p class="modal-sub">設定新的 4 位數字密碼，或清空送出 = 移除密碼</p>
+      <form id="pin-change-form">
+        <div class="field">
+          <label>新密碼（留空 = 不設密碼）</label>
+          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="${state.parentPin ? '已設定' : '未設定'}" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-cancel>取消</button>
+          <button type="submit" class="btn btn-primary">儲存</button>
+        </div>
+      </form>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('#pin-change-form').onsubmit = (e) => {
+      e.preventDefault();
+      const pin = e.target.pin.value.trim();
+      if (pin && !/^\d{4}$/.test(pin)) { shakeModal(); return; }
+      state.parentPin = pin; save();
+      closeModal();
+      toast(pin ? '密碼已更新 ★' : '密碼已移除');
+    };
+  }
+  document.getElementById('parent-toggle').onclick = openParentModal;
+  document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
   document.getElementById('btn-go-mine').onclick = () => { showScreen('screen-mine'); renderMine(); };
   document.getElementById('btn-go-rewards-2').onclick = () => { showScreen('screen-rewards'); renderRewards(); };
