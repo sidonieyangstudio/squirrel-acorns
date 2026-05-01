@@ -757,6 +757,12 @@ body.parent-mode .parent-toggle .ic-unlock { display: block; }
 body.parent-mode .parent-banner { display: block !important; }
 body.parent-mode #app { padding-top: 24px; }
 
+/* 危險區（清掉全部資料）只在家長設定 modal 內顯示 */
+.danger-zone { text-align: center; padding: 14px; border: 1.5px dashed rgba(239,118,120,0.5); border-radius: 14px; background: rgba(239,118,120,0.06); }
+.danger-zone-title { font-size: 13px; font-weight: 800; color: var(--pink); letter-spacing: 0.05em; margin-bottom: 6px; }
+.danger-zone-sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; line-height: 1.5; }
+.danger-zone-btn { width: 100%; }
+
 /* 兒童模式：隱藏所有編輯／管理／刪除／改名按鈕 */
 body.child-mode .habit-edit,
 body.child-mode #btn-manage-habits,

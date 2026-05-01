@@ -1232,6 +1232,12 @@
           <button type="submit" class="btn btn-primary">儲存</button>
         </div>
       </form>
+      <hr style="margin: 26px 0 16px; border: 0; border-top: 1.5px dashed rgba(239,118,120,0.4);">
+      <div class="danger-zone">
+        <div class="danger-zone-title">⚠ 危險區（不可復原）</div>
+        <p class="danger-zone-sub">清掉所有點數、習慣、獎勵、紀錄，App 回到第一次打開的狀態。</p>
+        <button type="button" class="btn btn-danger danger-zone-btn" data-clear-all>清掉全部資料重新開始</button>
+      </div>
     `);
     const root = document.getElementById('modal');
     root.querySelector('[data-cancel]').onclick = closeModal;
@@ -1244,11 +1250,16 @@
       if (pin && !/^\d{4}$/.test(pin)) { shakeModal(); return; }
       state.parentPin = pin;
       state.parentSecretQ = sq;
-      // 答案留空且原本有值 → 移除；留空且原本沒值 → 保持沒值
       state.parentSecretA = sa;
       save();
       closeModal();
       toast('家長設定已更新 ★');
+    };
+    root.querySelector('[data-clear-all]').onclick = () => {
+      if (!confirm('真的要清掉全部資料嗎？\n\n習慣、獎勵、點數、紀錄、家長密碼會全部歸零，無法復原。')) return;
+      if (!confirm('最後確認：真的要清掉嗎？')) return;
+      localStorage.clear();
+      window.location.reload();
     };
   }
   // 長按 5 秒右上鎖頭觸發 hardResetParentLock
