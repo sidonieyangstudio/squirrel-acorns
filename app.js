@@ -42,7 +42,9 @@
     streak: 0,
     lastActiveDate: null,
     redeemed: [],                    // [{ id, rewardId, title, icon, cost, date }]
-    parentPin: ''                    // 家長密碼 4 位數字（空 = 未設定）
+    parentPin: '',                   // 家長密碼 4 位數字（空 = 未設定）
+    parentSecretQ: '',               // 秘密題目（提示用）
+    parentSecretA: ''                // 答案，比對時統一 toLowerCase + trim
   };
 
   function h() { return Math.random().toString(36).slice(2, 9); }
@@ -1093,18 +1095,26 @@
       return;
     }
     if (!state.parentPin) {
-      // 第一次：引導設定（可略過）
+      // 第一次：引導設定（密碼/秘密題/答案皆可選）
       openModal(`
         <h3 class="modal-title">第一次設定家長模式</h3>
-        <p class="modal-sub">設一個 4 位數字密碼，孩子就不能改設定。也可以選「不設密碼」直接進去 ✦</p>
+        <p class="modal-sub">三個都可以留空。設了密碼孩子就動不了；設了秘密題萬一忘記密碼可以用它救回 ✦</p>
         <form id="pin-setup-form">
           <div class="field">
-            <label>新密碼（4 位數字）</label>
+            <label>家長密碼（4 位數字，可留空）</label>
             <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="例：1234" autofocus />
           </div>
+          <div class="field">
+            <label>秘密題目（可留空）</label>
+            <input name="secretQ" maxlength="40" placeholder="例：媽媽叫什麼" />
+          </div>
+          <div class="field">
+            <label>答案（可留空，大小寫不分）</label>
+            <input name="secretA" maxlength="40" placeholder="例：sidonie" />
+          </div>
           <div class="modal-actions" style="margin-top:18px;">
-            <button type="button" class="btn" data-skip>不設密碼，直接進入</button>
-            <button type="submit" class="btn btn-primary">儲存並進入</button>
+            <button type="button" class="btn" data-skip>都不設，直接進</button>
+            <button type="submit" class="btn btn-primary">儲存進入</button>
           </div>
         </form>
       `);
@@ -1114,14 +1124,21 @@
       };
       root.querySelector('#pin-setup-form').onsubmit = (e) => {
         e.preventDefault();
-        const pin = e.target.pin.value.trim();
-        if (!/^\d{4}$/.test(pin)) { shakeModal(); return; }
-        state.parentPin = pin; save();
-        closeModal(); setParentMode(true); toast('密碼已設好，進入家長模式 ★');
+        const f = e.target;
+        const pin = f.pin.value.trim();
+        const sq  = f.secretQ.value.trim();
+        const sa  = f.secretA.value.trim().toLowerCase();
+        if (pin && !/^\d{4}$/.test(pin)) { shakeModal(); return; }
+        state.parentPin = pin;
+        state.parentSecretQ = sq;
+        state.parentSecretA = sa;
+        save();
+        closeModal(); setParentMode(true); toast('已進入家長模式 ★');
       };
       return;
     }
     // 已設密碼：輸入驗證
+    const hasSecret = !!(state.parentSecretQ && state.parentSecretA);
     openModal(`
       <h3 class="modal-title">輸入家長密碼</h3>
       <p class="modal-sub">4 位數字</p>
@@ -1132,18 +1149,17 @@
         <div class="modal-actions" style="margin-top:18px;">
           <button type="button" class="btn" data-cancel>取消</button>
           <button type="submit" class="btn btn-primary">送出</button>
-          <button type="button" class="btn btn-ghost btn-sm" data-forget style="flex:0;font-size:11px;padding:6px 10px;">忘記密碼？</button>
+        </div>
+        ${hasSecret ? '<div style="text-align:center;margin-top:14px;"><button type="button" class="btn btn-ghost btn-sm" data-secret style="font-size:12px;padding:6px 14px;">忘記密碼？用秘密題回去</button></div>' : ''}
+        <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--ink-muted);line-height:1.5;">
+          完全忘記？長按右上鎖頭 5 秒可重置（資料會保留）
         </div>
       </form>
     `);
     const root = document.getElementById('modal');
     root.querySelector('[data-cancel]').onclick = closeModal;
-    root.querySelector('[data-forget]').onclick = () => {
-      if (confirm('忘記密碼會清掉舊密碼，需要重新設定一個新的。要繼續嗎？')) {
-        state.parentPin = ''; save();
-        closeModal(); openParentModal();
-      }
-    };
+    const secretBtn = root.querySelector('[data-secret]');
+    if (secretBtn) secretBtn.onclick = () => { closeModal(); openSecretQModal(); };
     root.querySelector('#pin-check-form').onsubmit = (e) => {
       e.preventDefault();
       const pin = e.target.pin.value.trim();
@@ -1156,14 +1172,60 @@
       }
     };
   }
+  function openSecretQModal() {
+    openModal(`
+      <h3 class="modal-title">秘密題救援</h3>
+      <p class="modal-sub">${escHtml(state.parentSecretQ || '')}</p>
+      <form id="secret-form">
+        <div class="field">
+          <label>答案（大小寫不分）</label>
+          <input name="ans" maxlength="40" autofocus placeholder="輸入答案" />
+        </div>
+        <div class="modal-actions" style="margin-top:18px;">
+          <button type="button" class="btn" data-cancel>取消</button>
+          <button type="submit" class="btn btn-primary">送出</button>
+        </div>
+      </form>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('#secret-form').onsubmit = (e) => {
+      e.preventDefault();
+      const ans = e.target.ans.value.trim().toLowerCase();
+      if (ans && ans === (state.parentSecretA || '').toLowerCase()) {
+        closeModal(); setParentMode(true); toast('答對了！進入家長模式 ★');
+      } else {
+        shakeModal();
+        e.target.ans.value = '';
+        e.target.ans.focus();
+      }
+    };
+  }
+  function hardResetParentLock() {
+    if (!confirm('資料保留，只清掉密碼跟秘密題。確定嗎？')) return;
+    state.parentPin = '';
+    state.parentSecretQ = '';
+    state.parentSecretA = '';
+    save();
+    setParentMode(true);
+    toast('密碼已重置 · 進入家長模式 ★');
+  }
   function openChangePinModal() {
     openModal(`
-      <h3 class="modal-title">改家長密碼</h3>
-      <p class="modal-sub">設定新的 4 位數字密碼，或清空送出 = 移除密碼</p>
+      <h3 class="modal-title">改家長設定</h3>
+      <p class="modal-sub">三個欄位都可改、留空 = 移除</p>
       <form id="pin-change-form">
         <div class="field">
-          <label>新密碼（留空 = 不設密碼）</label>
-          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="${state.parentPin ? '已設定' : '未設定'}" />
+          <label>密碼（4 位數字，留空 = 移除）</label>
+          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="${state.parentPin ? '已設定（重打覆蓋）' : '未設定'}" />
+        </div>
+        <div class="field">
+          <label>秘密題目</label>
+          <input name="secretQ" maxlength="40" value="${escAttr(state.parentSecretQ || '')}" placeholder="${state.parentSecretQ ? '' : '未設定'}" />
+        </div>
+        <div class="field">
+          <label>答案（大小寫不分）</label>
+          <input name="secretA" maxlength="40" placeholder="${state.parentSecretA ? '已設定（重打覆蓋；留空 = 移除）' : '未設定'}" />
         </div>
         <div class="modal-actions">
           <button type="button" class="btn" data-cancel>取消</button>
@@ -1175,13 +1237,55 @@
     root.querySelector('[data-cancel]').onclick = closeModal;
     root.querySelector('#pin-change-form').onsubmit = (e) => {
       e.preventDefault();
-      const pin = e.target.pin.value.trim();
+      const f = e.target;
+      const pin = f.pin.value.trim();
+      const sq  = f.secretQ.value.trim();
+      const sa  = f.secretA.value.trim().toLowerCase();
       if (pin && !/^\d{4}$/.test(pin)) { shakeModal(); return; }
-      state.parentPin = pin; save();
+      state.parentPin = pin;
+      state.parentSecretQ = sq;
+      // 答案留空且原本有值 → 移除；留空且原本沒值 → 保持沒值
+      state.parentSecretA = sa;
+      save();
       closeModal();
-      toast(pin ? '密碼已更新 ★' : '密碼已移除');
+      toast('家長設定已更新 ★');
     };
   }
+  // 長按 5 秒右上鎖頭觸發 hardResetParentLock
+  (function bindLongPress() {
+    const btn = document.getElementById('parent-toggle');
+    let timer = null;
+    let fired = false;
+    function start() {
+      if (timer) return;
+      fired = false;
+      btn.classList.add('long-press');
+      timer = setTimeout(() => {
+        fired = true;
+        timer = null;
+        btn.classList.remove('long-press');
+        hardResetParentLock();
+      }, 5000);
+    }
+    function cancel() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      btn.classList.remove('long-press');
+    }
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', start, { passive: true });
+    btn.addEventListener('mouseup', cancel);
+    btn.addEventListener('mouseleave', cancel);
+    btn.addEventListener('touchend', cancel);
+    btn.addEventListener('touchcancel', cancel);
+    // capture-phase 吞掉長按完成後跟著的 click（避免又開 modal）
+    btn.addEventListener('click', (e) => {
+      if (fired) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        fired = false;
+      }
+    }, true);
+  })();
   document.getElementById('parent-toggle').onclick = openParentModal;
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
