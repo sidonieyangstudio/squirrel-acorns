@@ -126,7 +126,52 @@
   const screens = ['screen-today', 'screen-rewards', 'screen-unlock', 'screen-mine'];
   function showScreen(id) {
     screens.forEach(s => document.getElementById(s).hidden = (s !== id));
+    document.body.classList.toggle('on-unlock', id === 'screen-unlock');
+    updateDockButtons(id);
     window.scrollTo(0, 0);
+  }
+  // 圖示備好給 dock 按鈕用
+  const ICON_HOME = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg>';
+  const ICON_PERSON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
+  const ICON_GIFT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"/><rect x="3" y="7" width="18" height="4" rx="1"/></svg>';
+
+  function setDockButton(btn, label, icon, primary, target) {
+    btn.innerHTML = icon + ' ' + label;
+    btn.classList.toggle('btn-primary', !!primary);
+    btn.dataset.go = target;
+  }
+  function goToScreen(target) {
+    if (target === 'today')        { showScreen('screen-today');   renderToday(); }
+    else if (target === 'mine')    { showScreen('screen-mine');    renderMine(); }
+    else if (target === 'rewards') { showScreen('screen-rewards'); renderRewards(); }
+  }
+  function updateDockButtons(currentId) {
+    const left  = document.getElementById('btn-go-mine');
+    const right = document.getElementById('btn-go-rewards-2');
+    if (!left || !right) return;
+    if (currentId === 'screen-mine') {
+      // 已在我的小本本：左改回任務（橘色主），右保留兌換獎勵（白）
+      setDockButton(left,  '回任務',   ICON_HOME,   true,  'today');
+      setDockButton(right, '兌換獎勵', ICON_GIFT,   false, 'rewards');
+    } else if (currentId === 'screen-rewards') {
+      // 已在獎勵小店：左保留我的（白），右改回任務（橘色主）
+      setDockButton(left,  '我的',     ICON_PERSON, false, 'mine');
+      setDockButton(right, '回任務',   ICON_HOME,   true,  'today');
+    } else {
+      // 在任務頁（today）：左我的（白）、右兌換獎勵（橘色主）
+      setDockButton(left,  '我的',     ICON_PERSON, false, 'mine');
+      setDockButton(right, '兌換獎勵', ICON_GIFT,   true,  'rewards');
+    }
+  }
+  function updateDock() {
+    const cur = todayPoints();
+    const max = maxPointsToday() || 1;
+    const curEl = document.getElementById('dock-current');
+    const tgtEl = document.getElementById('dock-target');
+    const barEl = document.getElementById('dock-bar');
+    if (curEl) curEl.textContent = cur;
+    if (tgtEl) tgtEl.textContent = maxPointsToday();
+    if (barEl) barEl.style.width = Math.min(100, Math.round(cur/max*100)) + '%';
   }
 
   /* ---------- audio: jsfxr-style 8-bit 合成 (Web Audio API) ---------- */
@@ -420,10 +465,7 @@
 
     // dock
     const cur = todayPoints();
-    const max = maxPointsToday() || 1;
-    document.getElementById('dock-current').textContent = cur;
-    document.getElementById('dock-target').textContent = maxPointsToday();
-    document.getElementById('dock-bar').style.width = Math.min(100, Math.round(cur/max*100)) + '%';
+    updateDock();
 
     // header
     document.getElementById('user-name').textContent = state.userName;
@@ -436,6 +478,7 @@
 
   /* ---------- render: rewards ---------- */
   function renderRewards() {
+    updateDock();
     document.getElementById('rw-current').textContent = state.points;
     const todayEl = document.getElementById('rw-today');
     if (todayEl) todayEl.textContent = todayPoints();
@@ -949,6 +992,7 @@
            }, 0);
   }
   function renderMine() {
+    updateDock();
     document.getElementById('mine-current').textContent = state.points;
     const days = weekKeys();
     const totals = days.map(d => ({ ...d, val: dayPoints(d.key) }));
@@ -1308,8 +1352,10 @@
   document.getElementById('parent-toggle').onclick = openParentModal;
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
-  document.getElementById('btn-go-mine').onclick = () => { showScreen('screen-mine'); renderMine(); };
-  document.getElementById('btn-go-rewards-2').onclick = () => { showScreen('screen-rewards'); renderRewards(); };
+  document.getElementById('btn-go-mine').onclick    = (e) => goToScreen(e.currentTarget.dataset.go || 'mine');
+  document.getElementById('btn-go-rewards-2').onclick = (e) => goToScreen(e.currentTarget.dataset.go || 'rewards');
+  // 初始化 dock 按鈕（today 頁）
+  updateDockButtons('screen-today');
   document.getElementById('btn-manage-habits').onclick = openManageHabits;
   document.getElementById('btn-manage-rewards').onclick = openManageRewards;
   document.getElementById('btn-edit-name').onclick = openNameForm;

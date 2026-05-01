@@ -92,6 +92,7 @@ a { color: inherit; }
   position: relative;
 }
 .screen[hidden] { display: none !important; }
+body.on-unlock #dock { display: none; }
 
 /* ---------- common ---------- */
 .btn {
@@ -180,11 +181,11 @@ a { color: inherit; }
   flex-shrink: 0;
 }
 .squirrel-wrap {
-  display: flex; justify-content: center; margin-top: 0; margin-bottom: -10px;
+  display: flex; justify-content: center; margin-top: -20px; margin-bottom: -8px;
   position: relative;
 }
 .squirrel-wrap img {
-  width: 240px; height: 240px;
+  width: 216px; height: 216px;
   animation: breathe 3.2s ease-in-out infinite;
   filter: drop-shadow(0 12px 28px rgba(94,84,83,0.18));
 }
@@ -275,8 +276,7 @@ a { color: inherit; }
 .dock-points { font-size: 14px; font-weight: 500; color: var(--ink-soft); }
 .dock-points b { color: var(--orange); font-size: 20px; font-weight: 600; }
 .dock-btns { display: flex; gap: 10px; margin-top: 12px; }
-.dock-btns .btn { flex: 1; height: 50px; }
-.dock-btns .btn-primary { flex: 2; }
+.dock-btns .btn { flex: 1; height: 50px; padding: 12px 8px; font-size: 15px; white-space: nowrap; }
 
 .progress {
   height: 8px; background: rgba(94,84,83,0.08);
@@ -340,19 +340,18 @@ a { color: inherit; }
   margin: -38px 0 -38px -16px;
 }
 .points-card-squirrel.mine {
-  width: 200px !important; height: 200px !important;
-  margin: -56px -20px -56px 0;
+  width: 185px !important; height: 185px !important;
+  margin: -57px -20px -52px 0;
 }
 .points-card-flip { padding: 22px 18px; min-height: 130px; }
 .points-card-flip .stat-value { font-size: 24px; }
 .points-card-flip .stat-label { font-size: 11px; }
-.points-card-mine { padding: 32px 18px; min-height: 180px; }
-.points-card-mine .stat-value { font-size: 26px; white-space: nowrap; }
-.points-card-mine .stat-label { font-size: 12px; }
+.points-card-mine .stat-value { font-size: 24px; white-space: nowrap; }
+.points-card-mine .stat-label { font-size: 11px; }
 
 .rewards-section {
   flex: 1;
-  padding: 18px 18px 40px;
+  padding: 18px 18px 220px;
   overflow-y: auto;
 }
 .rewards-section .kicker { margin-bottom: 12px; display: block; }
@@ -559,7 +558,7 @@ a { color: inherit; }
 /* ---------- screen 4: mine ---------- */
 .mine-section {
   flex: 1;
-  padding: 18px 18px 40px;
+  padding: 18px 18px 220px;
   overflow-y: auto;
 }
 .mine-week-card {

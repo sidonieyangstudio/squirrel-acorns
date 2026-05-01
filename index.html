@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=20">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -61,34 +61,12 @@
       </div>
     </main>
 
-    <div class="dock">
-      <div class="dock-row">
-        <span class="dock-label">
-          <svg width="22" height="22" viewBox="0 0 256 256" fill="#5E5453" stroke="#5E5453" stroke-width="10" stroke-linejoin="round"><path d="M232,104a56.06,56.06,0,0,0-56-56H136a24,24,0,0,1,24-24,8,8,0,0,0,0-16,40,40,0,0,0-40,40H80a56.06,56.06,0,0,0-56,56,16,16,0,0,0,8,13.83V128c0,35.53,33.12,62.12,59.74,83.49C103.66,221.07,120,234.18,120,240a8,8,0,0,0,16,0c0-5.82,16.34-18.93,28.26-28.51C190.88,190.12,224,163.53,224,128V117.83A16,16,0,0,0,232,104ZM80,64h96a40.06,40.06,0,0,1,40,40H40A40,40,0,0,1,80,64Zm74.25,135c-10.62,8.52-20,16-26.25,23.37-6.25-7.32-15.63-14.85-26.25-23.37C77.8,179.79,48,155.86,48,128v-8H208v8C208,155.86,178.2,179.79,154.25,199Z"/></svg>
-          我的橡實
-        </span>
-        <span class="dock-points"><b id="dock-current">0</b> / <span id="dock-target">0</span> 橡實</span>
-      </div>
-      <div class="progress"><div id="dock-bar" style="width:0%"></div></div>
-      <div class="dock-btns">
-        <button class="btn" id="btn-go-mine">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-          我的
-        </button>
-        <button class="btn btn-primary" id="btn-go-rewards-2">
-          兌換獎勵
-        </button>
-      </div>
-    </div>
   </section>
 
   <!-- ============ SCREEN 2 · REWARDS ============ -->
   <section id="screen-rewards" class="screen" hidden>
     <header class="page-header">
       <div class="page-header-row">
-        <button class="btn btn-icon" data-back>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
         <div class="page-header-title">獎勵小店</div>
         <button class="btn btn-icon" id="btn-manage-rewards" title="管理獎勵">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.4.6 1 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
@@ -116,13 +94,9 @@
   <section id="screen-mine" class="screen" hidden>
     <header class="page-header">
       <div class="page-header-row">
-        <button class="btn btn-icon" data-back>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
         <div class="page-header-title">我的小本本</div>
-        <div style="width:40px"></div>
       </div>
-      <div class="points-card points-card-mine">
+      <div class="points-card points-card-flip points-card-mine">
         <div class="stat" style="flex:1; text-align:left;">
           <div class="stat-label">MY ACORNS</div>
           <div class="stat-value">
@@ -184,6 +158,27 @@
     </div>
   </section>
 
+  <!-- ============ GLOBAL DOCK（所有 screen 共用，unlock 頁隱藏）============ -->
+  <div class="dock" id="dock">
+    <div class="dock-row">
+      <span class="dock-label">
+        <svg width="22" height="22" viewBox="0 0 256 256" fill="#5E5453" stroke="#5E5453" stroke-width="10" stroke-linejoin="round"><path d="M232,104a56.06,56.06,0,0,0-56-56H136a24,24,0,0,1,24-24,8,8,0,0,0,0-16,40,40,0,0,0-40,40H80a56.06,56.06,0,0,0-56,56,16,16,0,0,0,8,13.83V128c0,35.53,33.12,62.12,59.74,83.49C103.66,221.07,120,234.18,120,240a8,8,0,0,0,16,0c0-5.82,16.34-18.93,28.26-28.51C190.88,190.12,224,163.53,224,128V117.83A16,16,0,0,0,232,104ZM80,64h96a40.06,40.06,0,0,1,40,40H40A40,40,0,0,1,80,64Zm74.25,135c-10.62,8.52-20,16-26.25,23.37-6.25-7.32-15.63-14.85-26.25-23.37C77.8,179.79,48,155.86,48,128v-8H208v8C208,155.86,178.2,179.79,154.25,199Z"/></svg>
+        我的橡實
+      </span>
+      <span class="dock-points"><b id="dock-current">0</b> / <span id="dock-target">0</span> 橡實</span>
+    </div>
+    <div class="progress"><div id="dock-bar" style="width:0%"></div></div>
+    <div class="dock-btns">
+      <button class="btn" id="btn-go-mine">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        我的
+      </button>
+      <button class="btn btn-primary" id="btn-go-rewards-2">
+        兌換獎勵
+      </button>
+    </div>
+  </div>
+
   <!-- ============ MODAL ============ -->
   <div class="modal-backdrop" id="modal-backdrop" hidden>
     <div class="modal" id="modal" role="dialog" aria-modal="true">
@@ -227,7 +222,7 @@
   <svg id="ic-tent" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="4" r="2"/><path d="m14 5 3-3 3 3"/><path d="m14 10 3-3 3 3"/><path d="M17 14V2"/><path d="M17 14H7l-5 8h20Z"/><path d="M8 14v8"/><path d="m9 14 5 8"/></svg>
 </template>
 
-<script src="app.js?v=14"></script>
+<script src="app.js?v=20"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
