@@ -23,19 +23,21 @@
   const DEFAULT_STATE = {
     userName: '小寶',
     habits: [
-      { id: h(), title: '練習中文',     icon: 'ic-booka',    points: 3 },
-      { id: h(), title: '練琴',         icon: 'ic-piano',    points: 3 },
-      { id: h(), title: '閱讀繪本',     icon: 'ic-bookopen', points: 3 },
-      { id: h(), title: '運動',         icon: 'ic-dumbbell', points: 3 },
-      { id: h(), title: '安靜一小時',   icon: 'ic-shrub',    points: 4 },
-      { id: h(), title: '友善一小時',   icon: 'ic-heart',    points: 4 }
+      { id: h(), title: '寫一篇中文故事',     icon: 'ic-booka',    points: 3 },
+      { id: h(), title: '練琴 20 分鐘',       icon: 'ic-piano',    points: 3 },
+      { id: h(), title: '閱讀中文繪本',       icon: 'ic-bookopen', points: 3 },
+      { id: h(), title: '運動－波比跳 10 下', icon: 'ic-dumbbell', points: 3 },
+      { id: h(), title: '洗衣服＋烘衣服',     icon: 'ic-toolcase', points: 3 },
+      { id: h(), title: '安靜 1 小時 A',      icon: 'ic-shrub',    points: 4 },
+      { id: h(), title: '友善 1 小時 A',      icon: 'ic-heart',    points: 4 },
+      { id: h(), title: '不生氣 1 小時 A',    icon: 'ic-laugh',    points: 4 }
     ],
     rewards: [
-      { id: h(), title: '起司餅乾',   desc: '一包小零食',     icon: 'ic-candy',    cost: 10 },
-      { id: h(), title: '開小盲包',   desc: '隨機可愛小物',   icon: 'ic-sparkles', cost: 20 },
-      { id: h(), title: '開禮物箱',   desc: '驚喜小禮物一份', icon: 'ic-gift',     cost: 30 },
-      { id: h(), title: '材料大禮包', desc: '美勞材料一袋',   icon: 'ic-backpack', cost: 50 },
-      { id: h(), title: '玩具鑽石',   desc: '收藏隊長徽章',   icon: 'ic-gem',      cost: 80 }
+      { id: h(), title: '起司餅乾',     desc: '一包小零食',     icon: 'ic-candy',    cost: 10 },
+      { id: h(), title: '動物小盲包',   desc: '隨機可愛小物',   icon: 'ic-sparkles', cost: 20 },
+      { id: h(), title: '禮物箱',       desc: '驚喜小禮物一份', icon: 'ic-gift',     cost: 30 },
+      { id: h(), title: '玩具鑽石',     desc: '收藏閃亮亮寶石', icon: 'ic-gem',      cost: 50 },
+      { id: h(), title: '材料大禮包',   desc: '美術材料一盒',   icon: 'ic-palette',  cost: 80 }
     ],
     points: 0,                       // 累積總橡實
     log: {},                         // { '2025-05-01': { habitId: true, ... } }
@@ -135,33 +137,22 @@
   const ICON_PERSON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
   const ICON_GIFT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"/><rect x="3" y="7" width="18" height="4" rx="1"/></svg>';
 
-  function setDockButton(btn, label, icon, primary, target) {
-    btn.innerHTML = icon + ' ' + label;
-    btn.classList.toggle('btn-primary', !!primary);
-    btn.dataset.go = target;
-  }
   function goToScreen(target) {
     if (target === 'today')        { showScreen('screen-today');   renderToday(); }
     else if (target === 'mine')    { showScreen('screen-mine');    renderMine(); }
     else if (target === 'rewards') { showScreen('screen-rewards'); renderRewards(); }
   }
   function updateDockButtons(currentId) {
-    const left  = document.getElementById('btn-go-mine');
-    const right = document.getElementById('btn-go-rewards-2');
-    if (!left || !right) return;
-    if (currentId === 'screen-mine') {
-      // 已在我的小本本：左改回任務（橘色主），右保留兌換獎勵（白）
-      setDockButton(left,  '回任務',   ICON_HOME,   true,  'today');
-      setDockButton(right, '兌換獎勵', ICON_GIFT,   false, 'rewards');
-    } else if (currentId === 'screen-rewards') {
-      // 已在獎勵小店：左保留我的（白），右改回任務（橘色主）
-      setDockButton(left,  '我的',     ICON_PERSON, false, 'mine');
-      setDockButton(right, '回任務',   ICON_HOME,   true,  'today');
-    } else {
-      // 在任務頁（today）：左我的（白）、右兌換獎勵（橘色主）
-      setDockButton(left,  '我的',     ICON_PERSON, false, 'mine');
-      setDockButton(right, '兌換獎勵', ICON_GIFT,   true,  'rewards');
-    }
+    const map = {
+      'screen-today':   'btn-go-today',
+      'screen-mine':    'btn-go-mine',
+      'screen-rewards': 'btn-go-rewards-2'
+    };
+    ['btn-go-today','btn-go-mine','btn-go-rewards-2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.toggle('btn-primary', map[currentId] === id);
+    });
   }
   function updateDock() {
     const cur = todayPoints();
@@ -486,14 +477,15 @@
     const list = document.getElementById('reward-list');
     list.innerHTML = '';
     if (state.rewards.length === 0) {
-      list.innerHTML = '<div class="empty">還沒有獎勵～<br>點右上角齒輪新增一個吧！</div>';
+      list.innerHTML = '<div class="empty">還沒有獎勵～<br>請家長點下方「管理獎勵」新增！</div>';
       return;
     }
 
-    const sorted = state.rewards.slice().sort((a,b) => a.cost - b.cost);
-    const firstLockedId = (sorted.find(r => state.points < r.cost) || {}).id;
+    // 跟著 state.rewards 自訂順序顯示，不依價格排
+    const ordered = state.rewards.slice();
+    const firstLockedId = (ordered.find(r => state.points < r.cost) || {}).id;
 
-    sorted.forEach(rw => {
+    ordered.forEach(rw => {
       const can = state.points >= rw.cost;
       const need = Math.max(0, rw.cost - state.points);
       const isNext = !can && rw.id === firstLockedId;
@@ -869,72 +861,143 @@
   }
 
   /* ---------- manage list ---------- */
-  function openManageHabits() {
-    openModal(`
-      <h3 class="modal-title">管理習慣</h3>
-      <p class="modal-sub">點任一個可編輯，或新增一個 ✏️</p>
-      <div id="manage-list">
-        ${state.habits.map(hb => `
-          <div class="manage-row" data-mh="${hb.id}">
-            <div class="habit-icon-box">${iconSvg(hb.icon, 22)}</div>
-            <div class="info">
-              <div class="info-title">${escHtml(hb.title)}</div>
-              <div class="info-sub">+${hb.points} 顆橡實</div>
-            </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9c938f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        `).join('')}
-        ${state.habits.length === 0 ? '<div class="empty">還沒有任何習慣</div>' : ''}
-      </div>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button type="button" class="btn" data-cancel>關閉</button>
-        <button type="button" class="btn btn-primary" id="btn-new-habit">＋ 新增習慣</button>
-      </div>
-    `);
-    const root = document.getElementById('modal');
-    root.querySelector('[data-cancel]').onclick = closeModal;
-    root.querySelector('#btn-new-habit').onclick = () => openHabitForm();
-    root.querySelectorAll('[data-mh]').forEach(row => {
-      row.onclick = () => {
-        const id = row.dataset.mh;
-        const hb = state.habits.find(x => x.id === id);
-        if (hb) openHabitForm(hb);
-      };
+  // 長按進入「上下移動」模式：500ms 觸發 → 顯示 ↑↓ 按鈕；點 ↑↓ 即時調換；點空白處或再點同一列退出
+  function bindReorderRow(row, list, attr, rerender) {
+    let timer = null;
+    let triggered = false;
+    const REORDER_MS = 500;
+
+    function exitReorder() {
+      row.classList.remove('reorder-active');
+    }
+    function clearTimer() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      row.classList.remove('long-pressing');
+    }
+    function startTimer() {
+      triggered = false;
+      row.classList.add('long-pressing');
+      timer = setTimeout(() => {
+        triggered = true;
+        row.classList.remove('long-pressing');
+        document.querySelectorAll('#manage-list .manage-row.reorder-active').forEach(n => {
+          if (n !== row) n.classList.remove('reorder-active');
+        });
+        row.classList.add('reorder-active');
+        if (navigator.vibrate) navigator.vibrate(40);
+      }, REORDER_MS);
+    }
+
+    row.addEventListener('mousedown', startTimer);
+    row.addEventListener('touchstart', startTimer, { passive: true });
+    row.addEventListener('mouseup', clearTimer);
+    row.addEventListener('mouseleave', clearTimer);
+    row.addEventListener('touchend', clearTimer);
+    row.addEventListener('touchcancel', clearTimer);
+    row.addEventListener('touchmove', clearTimer, { passive: true });
+
+    row.addEventListener('click', (e) => {
+      if (triggered) { triggered = false; e.stopPropagation(); return; }
+      if (e.target.closest('.reorder-btn')) return;
+      if (row.classList.contains('reorder-active')) {
+        exitReorder();
+        e.stopPropagation();
+        return;
+      }
+      // 一般點擊 → 編輯
+      const id = row.dataset[attr];
+      const item = list.find(x => x.id === id);
+      if (item) {
+        if (attr === 'mh') openHabitForm(item);
+        else openRewardForm(item);
+      }
+    });
+
+    // ↑ ↓ 按鈕
+    row.querySelectorAll('.reorder-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = row.dataset[attr];
+        const idx = list.findIndex(x => x.id === id);
+        if (idx < 0) return;
+        const dir = btn.dataset.dir === 'up' ? -1 : 1;
+        const next = idx + dir;
+        if (next < 0 || next >= list.length) return;
+        const tmp = list[idx]; list[idx] = list[next]; list[next] = tmp;
+        save();
+        rerender();
+      });
     });
   }
 
+  function buildManageRow(item, attr, isFirst, isLast) {
+    const isHabit = attr === 'mh';
+    const iconBox = isHabit ? 'habit-icon-box' : 'reward-icon-box';
+    const sub = isHabit ? `+${item.points} 顆橡實` : `${item.cost} 顆橡實`;
+    return `
+      <div class="manage-row" data-${attr}="${item.id}">
+        <div class="${iconBox}" style="width:40px;height:40px;border-radius:12px;">${iconSvg(item.icon, 22)}</div>
+        <div class="info">
+          <div class="info-title">${escHtml(item.title)}</div>
+          <div class="info-sub">${sub}</div>
+        </div>
+        <div class="reorder-btns">
+          <button type="button" class="reorder-btn" data-dir="up" aria-label="上移" ${isFirst ? 'disabled' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
+          </button>
+          <button type="button" class="reorder-btn" data-dir="down" aria-label="下移" ${isLast ? 'disabled' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <svg class="chevron-right" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9c938f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    `;
+  }
+
+  function openManageHabits() {
+    const render = () => {
+      const html = `
+        <h3 class="modal-title">管理習慣</h3>
+        <p class="manage-hint">點一下編輯，長按 0.5 秒進入「上下移動」</p>
+        <div id="manage-list">
+          ${state.habits.map((hb, i) => buildManageRow(hb, 'mh', i === 0, i === state.habits.length - 1)).join('')}
+          ${state.habits.length === 0 ? '<div class="empty">還沒有任何習慣</div>' : ''}
+        </div>
+        <div class="modal-actions" style="margin-top:14px;">
+          <button type="button" class="btn" data-cancel>關閉</button>
+          <button type="button" class="btn btn-primary" id="btn-new-habit">＋ 新增習慣</button>
+        </div>
+      `;
+      openModal(html);
+      const root = document.getElementById('modal');
+      root.querySelector('[data-cancel]').onclick = closeModal;
+      root.querySelector('#btn-new-habit').onclick = () => openHabitForm();
+      root.querySelectorAll('[data-mh]').forEach(row => bindReorderRow(row, state.habits, 'mh', () => { render(); renderToday(); }));
+    };
+    render();
+  }
+
   function openManageRewards() {
-    openModal(`
-      <h3 class="modal-title">管理獎勵</h3>
-      <p class="modal-sub">點任一個可編輯，或新增一個 ✨</p>
-      <div id="manage-list">
-        ${state.rewards.map(rw => `
-          <div class="manage-row" data-mr="${rw.id}">
-            <div class="reward-icon-box" style="width:40px;height:40px;border-radius:12px;">${iconSvg(rw.icon, 22)}</div>
-            <div class="info">
-              <div class="info-title">${escHtml(rw.title)}</div>
-              <div class="info-sub">${rw.cost} 顆橡實</div>
-            </div>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9c938f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-        `).join('')}
-        ${state.rewards.length === 0 ? '<div class="empty">還沒有任何獎勵</div>' : ''}
-      </div>
-      <div class="modal-actions" style="margin-top:14px;">
-        <button type="button" class="btn" data-cancel>關閉</button>
-        <button type="button" class="btn btn-primary" id="btn-new-reward">＋ 新增獎勵</button>
-      </div>
-    `);
-    const root = document.getElementById('modal');
-    root.querySelector('[data-cancel]').onclick = closeModal;
-    root.querySelector('#btn-new-reward').onclick = () => openRewardForm();
-    root.querySelectorAll('[data-mr]').forEach(row => {
-      row.onclick = () => {
-        const id = row.dataset.mr;
-        const rw = state.rewards.find(x => x.id === id);
-        if (rw) openRewardForm(rw);
-      };
-    });
+    const render = () => {
+      const html = `
+        <h3 class="modal-title">管理獎勵</h3>
+        <p class="manage-hint">點一下編輯，長按 0.5 秒進入「上下移動」</p>
+        <div id="manage-list">
+          ${state.rewards.map((rw, i) => buildManageRow(rw, 'mr', i === 0, i === state.rewards.length - 1)).join('')}
+          ${state.rewards.length === 0 ? '<div class="empty">還沒有任何獎勵</div>' : ''}
+        </div>
+        <div class="modal-actions" style="margin-top:14px;">
+          <button type="button" class="btn" data-cancel>關閉</button>
+          <button type="button" class="btn btn-primary" id="btn-new-reward">＋ 新增獎勵</button>
+        </div>
+      `;
+      openModal(html);
+      const root = document.getElementById('modal');
+      root.querySelector('[data-cancel]').onclick = closeModal;
+      root.querySelector('#btn-new-reward').onclick = () => openRewardForm();
+      root.querySelectorAll('[data-mr]').forEach(row => bindReorderRow(row, state.rewards, 'mr', () => { render(); renderRewards(); }));
+    };
+    render();
   }
 
   /* ---------- name editor ---------- */
@@ -1352,8 +1415,9 @@
   document.getElementById('parent-toggle').onclick = openParentModal;
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
-  document.getElementById('btn-go-mine').onclick    = (e) => goToScreen(e.currentTarget.dataset.go || 'mine');
-  document.getElementById('btn-go-rewards-2').onclick = (e) => goToScreen(e.currentTarget.dataset.go || 'rewards');
+  document.getElementById('btn-go-today').onclick     = () => goToScreen('today');
+  document.getElementById('btn-go-mine').onclick      = () => goToScreen('mine');
+  document.getElementById('btn-go-rewards-2').onclick = () => goToScreen('rewards');
   // 初始化 dock 按鈕（today 頁）
   updateDockButtons('screen-today');
   document.getElementById('btn-manage-habits').onclick = openManageHabits;

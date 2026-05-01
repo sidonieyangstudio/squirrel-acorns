@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20">
+<link rel="stylesheet" href="styles.css?v=21">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -68,9 +68,6 @@
     <header class="page-header">
       <div class="page-header-row">
         <div class="page-header-title">獎勵小店</div>
-        <button class="btn btn-icon" id="btn-manage-rewards" title="管理獎勵">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.4.6 1 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
-        </button>
       </div>
       <div class="points-card points-card-flip">
         <img src="assets/squirrel-cheer.svg" alt="跳起松鼠" class="points-card-squirrel cheer" />
@@ -87,6 +84,12 @@
     <main class="rewards-section">
       <h2 class="rewards-section-title">點下方卡片就可以兌換</h2>
       <div id="reward-list"></div>
+      <div class="add-btn-row">
+        <button class="btn btn-ghost btn-block" id="btn-manage-rewards">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          管理獎勵
+        </button>
+      </div>
     </main>
   </section>
 
@@ -169,12 +172,17 @@
     </div>
     <div class="progress"><div id="dock-bar" style="width:0%"></div></div>
     <div class="dock-btns">
-      <button class="btn" id="btn-go-mine">
+      <button class="btn" id="btn-go-today" data-go="today">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg>
+        今天
+      </button>
+      <button class="btn" id="btn-go-mine" data-go="mine">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
         我的
       </button>
-      <button class="btn btn-primary" id="btn-go-rewards-2">
-        兌換獎勵
+      <button class="btn" id="btn-go-rewards-2" data-go="rewards">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"/><path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"/><rect x="3" y="7" width="18" height="4" rx="1"/></svg>
+        獎勵
       </button>
     </div>
   </div>
@@ -222,7 +230,7 @@
   <svg id="ic-tent" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="4" r="2"/><path d="m14 5 3-3 3 3"/><path d="m14 10 3-3 3 3"/><path d="M17 14V2"/><path d="M17 14H7l-5 8h20Z"/><path d="M8 14v8"/><path d="m9 14 5 8"/></svg>
 </template>
 
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

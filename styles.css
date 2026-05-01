@@ -275,8 +275,9 @@ body.on-unlock #dock { display: none; }
 .dock-label { font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0.04em; }
 .dock-points { font-size: 14px; font-weight: 500; color: var(--ink-soft); }
 .dock-points b { color: var(--orange); font-size: 20px; font-weight: 600; }
-.dock-btns { display: flex; gap: 10px; margin-top: 12px; }
-.dock-btns .btn { flex: 1; height: 50px; padding: 12px 8px; font-size: 15px; white-space: nowrap; }
+.dock-btns { display: flex; gap: 8px; margin-top: 12px; }
+.dock-btns .btn { flex: 1; height: 48px; padding: 10px 4px; font-size: 14px; white-space: nowrap; gap: 4px; }
+.dock-btns .btn svg { flex-shrink: 0; }
 
 .progress {
   height: 8px; background: rgba(94,84,83,0.08);
@@ -863,10 +864,35 @@ body.child-mode [data-delete-reward] { display: none !important; }
   transition: all .2s var(--ease);
 }
 .manage-row:hover { box-shadow: var(--shadow); }
+.manage-row.long-pressing { background: #FFF1E5; }
+.manage-row.reorder-active {
+  background: #FFE8D5; border-color: var(--brand);
+  box-shadow: 0 4px 14px rgba(218,132,79,0.25);
+  transform: scale(1.02);
+}
 .manage-row .reward-icon-box, .manage-row .habit-icon-box { width: 40px; height: 40px; border-radius: 12px; }
-.manage-row .info { flex: 1; }
+.manage-row .info { flex: 1; min-width: 0; }
 .manage-row .info-title { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
 .manage-row .info-sub { font-size: 12px; color: var(--ink-muted); margin-top: 2px; font-weight: 400; }
+.manage-row .reorder-btns { display: none; gap: 6px; flex-shrink: 0; }
+.manage-row.reorder-active .reorder-btns { display: flex; }
+.manage-row.reorder-active .chevron-right { display: none; }
+.manage-row .reorder-btn {
+  width: 36px; height: 36px; border-radius: 12px;
+  background: var(--white); border: 1px solid var(--brand); color: var(--brand);
+  display: grid; place-items: center;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+.manage-row .reorder-btn:disabled { opacity: 0.35; }
+.manage-hint {
+  font-size: 12px; color: var(--ink-muted);
+  margin: 0 0 10px; padding: 8px 12px;
+  background: #FFF7EE; border-radius: 10px;
+  border: 1px dashed var(--brand);
+}
 
 .section-tabs {
   display: flex; gap: 8px; padding: 14px 18px 4px;
