@@ -727,7 +727,7 @@
 
     btn.disabled = false;
     btn.textContent = '好手氣加碼';
-    sub.textContent = '粉色格子連成線，就能加碼橡實。';
+    sub.innerHTML = '粉色格子連成線<br>就可以加碼橡實';
     let cells = buildBingoCells();
     renderBingoCells(cells, true);
     stopBingoSpin();
@@ -1153,76 +1153,150 @@
   }
 
   /* ---------- manage list ---------- */
-  // 長按進入「上下移動」模式：500ms 觸發 → 顯示 ↑↓ 按鈕；點 ↑↓ 即時調換；點空白處或再點同一列退出
-  function bindReorderRow(row, list, attr, rerender) {
+  // 長按進入排序模式：進入後可直接拖曳清單，直到點其他按鈕或關閉視窗。
+  function bindDragSortList(root, list, attr, afterChange) {
+    const box = root.querySelector('#manage-list');
+    if (!box) return;
+    let sorting = false;
     let timer = null;
-    let triggered = false;
+    let activeRow = null;
+    let dragRow = null;
+    let dragId = null;
+    let pointerId = null;
+    let moved = false;
     const REORDER_MS = 500;
 
-    function exitReorder() {
-      row.classList.remove('reorder-active');
+    function rows() {
+      return Array.from(box.querySelectorAll(`.manage-row[data-${attr}]`));
     }
-    function clearTimer() {
+
+    function enterSortMode(row) {
+      sorting = true;
+      box.classList.add('sorting');
+      rows().forEach(n => n.classList.add('reorder-active'));
+      if (row && navigator.vibrate) navigator.vibrate(40);
+    }
+
+    function syncListFromDom() {
+      const order = rows().map(row => row.dataset[attr]);
+      const byId = new Map(list.map(item => [item.id, item]));
+      const sorted = order.map(id => byId.get(id)).filter(Boolean);
+      list.splice(0, list.length, ...sorted);
+      save();
+      afterChange();
+    }
+
+    function clearTimer(row) {
       if (timer) { clearTimeout(timer); timer = null; }
-      row.classList.remove('long-pressing');
+      if (row) row.classList.remove('long-pressing');
     }
-    function startTimer() {
-      triggered = false;
+
+    function clearWindowDragEvents() {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    }
+
+    function finishDrag() {
+      clearTimer(activeRow);
+      clearWindowDragEvents();
+      if (dragRow) dragRow.classList.remove('dragging');
+      dragRow = null;
+      dragId = null;
+      pointerId = null;
+      activeRow = null;
+      document.body.classList.remove('drag-sorting');
+      if (sorting) syncListFromDom();
+    }
+
+    function startDrag(row, e) {
+      if (!sorting) enterSortMode(row);
+      dragRow = row;
+      dragId = row.dataset[attr];
+      pointerId = e.pointerId;
+      moved = false;
+      row.classList.remove('long-pressing');
+      row.classList.add('dragging');
+      document.body.classList.add('drag-sorting');
+    }
+
+    function onPointerDown(e) {
+      const row = e.currentTarget;
+      if (e.target.closest('button')) return;
+      activeRow = row;
+      moved = false;
+      pointerId = e.pointerId;
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+      if (sorting) {
+        startDrag(row, e);
+        return;
+      }
       row.classList.add('long-pressing');
       timer = setTimeout(() => {
-        triggered = true;
-        row.classList.remove('long-pressing');
-        document.querySelectorAll('#manage-list .manage-row.reorder-active').forEach(n => {
-          if (n !== row) n.classList.remove('reorder-active');
-        });
-        row.classList.add('reorder-active');
-        if (navigator.vibrate) navigator.vibrate(40);
+        enterSortMode(row);
+        startDrag(row, e);
       }, REORDER_MS);
     }
 
-    row.addEventListener('mousedown', startTimer);
-    row.addEventListener('touchstart', startTimer, { passive: true });
-    row.addEventListener('mouseup', clearTimer);
-    row.addEventListener('mouseleave', clearTimer);
-    row.addEventListener('touchend', clearTimer);
-    row.addEventListener('touchcancel', clearTimer);
-    row.addEventListener('touchmove', clearTimer, { passive: true });
+    function onPointerMove(e) {
+      const row = activeRow;
+      if (!row || (pointerId !== null && e.pointerId !== pointerId)) return;
+      if (!dragRow || dragId !== row.dataset[attr]) return;
+      moved = true;
+      e.preventDefault();
+      const otherRows = rows().filter(n => n !== dragRow);
+      const beforeRow = otherRows.find(target => {
+        const rect = target.getBoundingClientRect();
+        return e.clientY < rect.top + rect.height / 2;
+      });
+      box.insertBefore(dragRow, beforeRow || null);
+    }
 
-    row.addEventListener('click', (e) => {
-      if (triggered) { triggered = false; e.stopPropagation(); return; }
-      if (e.target.closest('.reorder-btn')) return;
-      if (row.classList.contains('reorder-active')) {
-        exitReorder();
-        e.stopPropagation();
+    function onPointerUp(e) {
+      if (pointerId !== null && e.pointerId !== pointerId) return;
+      if (!dragRow) {
+        clearTimer(activeRow);
+        clearWindowDragEvents();
+        activeRow = null;
+        pointerId = null;
         return;
       }
-      // 一般點擊 → 編輯
-      const id = row.dataset[attr];
-      const item = list.find(x => x.id === id);
-      if (item) {
-        if (attr === 'mh') openHabitForm(item);
-        else openRewardForm(item);
-      }
+      finishDrag();
+      e.stopPropagation();
+    }
+
+    rows().forEach(row => {
+      row.addEventListener('pointerdown', onPointerDown);
+      row.addEventListener('click', (e) => {
+        if (sorting || moved) {
+          e.preventDefault();
+          e.stopPropagation();
+          moved = false;
+          return;
+        }
+        if (e.target.closest('button')) return;
+        // 一般點擊 → 編輯
+        const id = row.dataset[attr];
+        const item = list.find(x => x.id === id);
+        if (item) {
+          if (attr === 'mh') openHabitForm(item);
+          else openRewardForm(item);
+        }
+      });
     });
 
-    // ↑ ↓ 按鈕
-    row.querySelectorAll('.reorder-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = row.dataset[attr];
-        const idx = list.findIndex(x => x.id === id);
-        if (idx < 0) return;
-        const dir = btn.dataset.dir === 'up' ? -1 : 1;
-        const next = idx + dir;
-        if (next < 0 || next >= list.length) return;
-        const tmp = list[idx]; list[idx] = list[next]; list[next] = tmp;
-        save();
-        rerender();
-      });
+    root.querySelectorAll('[data-cancel], #btn-new-habit, #btn-new-reward').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sorting = false;
+        box.classList.remove('sorting');
+        rows().forEach(row => row.classList.remove('reorder-active', 'dragging', 'long-pressing'));
+      }, { capture: true });
     });
   }
 
-  function buildManageRow(item, attr, isFirst, isLast) {
+  function buildManageRow(item, attr) {
     const isHabit = attr === 'mh';
     const iconBox = isHabit ? 'habit-icon-box' : 'reward-icon-box';
     const sub = isHabit ? `+${item.points} 顆橡實` : `${item.cost} 顆橡實`;
@@ -1233,13 +1307,8 @@
           <div class="info-title">${escHtml(item.title)}</div>
           <div class="info-sub">${sub}</div>
         </div>
-        <div class="reorder-btns">
-          <button type="button" class="reorder-btn" data-dir="up" aria-label="上移" ${isFirst ? 'disabled' : ''}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
-          </button>
-          <button type="button" class="reorder-btn" data-dir="down" aria-label="下移" ${isLast ? 'disabled' : ''}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
+        <div class="drag-grip" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
         </div>
         <svg class="chevron-right" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9c938f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -1250,9 +1319,9 @@
     const render = () => {
       const html = `
         <h3 class="modal-title">管理習慣</h3>
-        <p class="manage-hint">點一下編輯，長按 0.5 秒進入「上下移動」</p>
+        <p class="manage-hint">點一下編輯，長按 0.5 秒後直接拖曳排序</p>
         <div id="manage-list">
-          ${state.habits.map((hb, i) => buildManageRow(hb, 'mh', i === 0, i === state.habits.length - 1)).join('')}
+          ${state.habits.map(hb => buildManageRow(hb, 'mh')).join('')}
           ${state.habits.length === 0 ? '<div class="empty">還沒有任何習慣</div>' : ''}
         </div>
         <div class="modal-actions" style="margin-top:14px;">
@@ -1264,7 +1333,7 @@
       const root = document.getElementById('modal');
       root.querySelector('[data-cancel]').onclick = closeModal;
       root.querySelector('#btn-new-habit').onclick = () => openHabitForm();
-      root.querySelectorAll('[data-mh]').forEach(row => bindReorderRow(row, state.habits, 'mh', () => { render(); renderToday(); }));
+      bindDragSortList(root, state.habits, 'mh', renderToday);
     };
     render();
   }
@@ -1273,9 +1342,9 @@
     const render = () => {
       const html = `
         <h3 class="modal-title">管理獎勵</h3>
-        <p class="manage-hint">點一下編輯，長按 0.5 秒進入「上下移動」</p>
+        <p class="manage-hint">點一下編輯，長按 0.5 秒後直接拖曳排序</p>
         <div id="manage-list">
-          ${state.rewards.map((rw, i) => buildManageRow(rw, 'mr', i === 0, i === state.rewards.length - 1)).join('')}
+          ${state.rewards.map(rw => buildManageRow(rw, 'mr')).join('')}
           ${state.rewards.length === 0 ? '<div class="empty">還沒有任何獎勵</div>' : ''}
         </div>
         <div class="modal-actions" style="margin-top:14px;">
@@ -1287,7 +1356,7 @@
       const root = document.getElementById('modal');
       root.querySelector('[data-cancel]').onclick = closeModal;
       root.querySelector('#btn-new-reward').onclick = () => openRewardForm();
-      root.querySelectorAll('[data-mr]').forEach(row => bindReorderRow(row, state.rewards, 'mr', () => { render(); renderRewards(); }));
+      bindDragSortList(root, state.rewards, 'mr', renderRewards);
     };
     render();
   }
