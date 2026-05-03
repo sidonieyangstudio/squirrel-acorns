@@ -824,7 +824,7 @@
     if (reward) {
       card.hidden = false;
       const icBox = card.querySelector('.reward-icon-box');
-      icBox.innerHTML = iconSvg(reward.icon, 32, '#5E5453');
+      icBox.innerHTML = iconSvg(reward.icon, 32, '#FEFBF9');
       document.getElementById('unlock-card-name').textContent = reward.title;
       document.getElementById('unlock-card-sub').textContent = `已扣抵 ${reward.cost} 顆橡實`;
       document.getElementById('unlock-points').textContent = reward.cost;
@@ -1452,7 +1452,7 @@
       list.innerHTML = items.map(r => `
         <div class="mine-redeemed">
           <div class="reward-icon-box" style="background:var(--honey)">
-            ${iconSvg(r.icon, 24, '#5E5453')}
+            ${iconSvg(r.icon, 24, '#FEFBF9')}
           </div>
           <div class="info">
             <div class="info-title">${escHtml(r.title)}</div>
