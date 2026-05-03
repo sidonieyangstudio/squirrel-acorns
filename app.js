@@ -785,7 +785,6 @@
       const card = document.createElement('div');
       card.className = 'reward' + (can ? ' affordable' : ' locked') + (isNext ? ' next-goal' : '');
       card.innerHTML = `
-        ${can ? '<span class="ribbon">✦ 已解鎖</span>' : ''}
         <div class="reward-icon-box">
           ${iconSvg(rw.icon, 32, can ? '#FEFBF9' : '#9c938f')}
           ${can ? '' : '<div class="reward-lock-overlay"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>'}
