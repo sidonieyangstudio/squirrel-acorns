@@ -49,6 +49,7 @@
     streak: 0,
     lastActiveDate: null,
     redeemed: [],                    // [{ id, rewardId, title, icon, cost, date }]
+    bingoBonuses: {},                // { '2026-05-01': { bonus, lines, at } }
     parentPin: '',                   // 家長密碼 4 位數字（空 = 未設定）
     parentSecretQ: '',               // 秘密題目（提示用）
     parentSecretA: ''                // 答案，比對時統一 toLowerCase + trim
@@ -130,8 +131,9 @@
   }
 
   /* ---------- screen routing ---------- */
-  const screens = ['screen-today', 'screen-rewards', 'screen-unlock', 'screen-mine'];
+  const screens = ['screen-today', 'screen-rewards', 'screen-unlock', 'screen-mine', 'screen-bingo'];
   function showScreen(id) {
+    if (id !== 'screen-bingo') stopBingoSpin();
     screens.forEach(s => document.getElementById(s).hidden = (s !== id));
     document.body.classList.toggle('on-unlock', id === 'screen-unlock');
     updateDockButtons(id);
@@ -146,12 +148,14 @@
     if (target === 'today')        { showScreen('screen-today');   renderToday(); }
     else if (target === 'mine')    { showScreen('screen-mine');    renderMine(); }
     else if (target === 'rewards') { showScreen('screen-rewards'); renderRewards(); }
+    else if (target === 'bingo')    { showScreen('screen-bingo');   renderBingo(); }
   }
   function updateDockButtons(currentId) {
     const map = {
       'screen-today':   'btn-go-today',
       'screen-mine':    'btn-go-mine',
-      'screen-rewards': 'btn-go-rewards-2'
+      'screen-rewards': 'btn-go-rewards-2',
+      'screen-bingo':   'btn-go-today'
     };
     ['btn-go-today','btn-go-mine','btn-go-rewards-2'].forEach(id => {
       const el = document.getElementById(id);
@@ -244,6 +248,17 @@
   }
   function rewardSfx() {
     jsfxrPlay(SFX_REWARD, 1, 1.2);
+  }
+  function bingoTickSfx() {
+    jsfxrPlay(SFX_HABIT, 0.7 + Math.random() * 0.7, 0.35);
+  }
+  function bingoLineSfx(index = 0) {
+    jsfxrPlay(SFX_REWARD, 1 + index * 0.08, 0.9);
+    setTimeout(() => jsfxrPlay(SFX_HABIT, 1.2 + index * 0.08, 0.6), 110);
+  }
+  function bingoTotalSfx() {
+    jackpotFanfare();
+    setTimeout(coinShower, 180);
   }
   /* ---------- 賭城贏錢音效套組：jackpot 三輪琶音 + 金幣嘩啦 + 鈴鐺 + 拉長歡呼 ---------- */
   function jackpotFanfare() {
@@ -413,7 +428,9 @@
   /* ---------- points helpers ---------- */
   function todayPoints() {
     const log = state.log[todayKey()] || {};
-    return state.habits.reduce((sum, hab) => sum + (log[hab.id] ? hab.points : 0), 0);
+    const habitPoints = state.habits.reduce((sum, hab) => sum + (log[hab.id] ? hab.points : 0), 0);
+    const bonus = ((state.bingoBonuses || {})[todayKey()] || {}).bonus || 0;
+    return habitPoints + bonus;
   }
   function maxPointsToday() {
     return state.habits.reduce((s, h) => s + h.points, 0);
@@ -470,6 +487,277 @@
     const week = ['日','一','二','三','四','五','六'][d.getDay()];
     document.getElementById('today-date').textContent =
       `${d.getMonth()+1}月${d.getDate()}日 · 星期${week}`;
+  }
+
+  /* ---------- render: bingo ---------- */
+  let bingoTimer = null;
+  let bingoTickTimer = null;
+  let bingoBusy = false;
+
+  function stopBingoSpin() {
+    if (bingoTimer) { clearInterval(bingoTimer); bingoTimer = null; }
+    if (bingoTickTimer) { clearInterval(bingoTickTimer); bingoTickTimer = null; }
+  }
+
+  function bingoGridConfig() {
+    if (state.habits.length <= 12) return { total: 9, cols: 3, rows: 3 };
+    return { total: 16, cols: 4, rows: 4 };
+  }
+  function bingoConfigFromCells(cells) {
+    return (cells || []).length <= 9
+      ? { total: 9, cols: 3, rows: 3 }
+      : { total: 16, cols: 4, rows: 4 };
+  }
+
+  function shuffled(list) {
+    const arr = list.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function pickBingoHabits(cfg, log) {
+    const all = state.habits.slice();
+    if (all.length <= cfg.total) return shuffled(all);
+
+    const selected = shuffled(all).slice(0, cfg.total);
+    if (cfg.total !== 9) return selected;
+
+    const allUndone = all.filter(habit => !log[habit.id]);
+    const neededWhite = Math.min(2, allUndone.length);
+    let selectedUndone = selected.filter(habit => !log[habit.id]).length;
+    if (selectedUndone >= neededWhite) return selected;
+
+    const selectedIds = new Set(selected.map(habit => habit.id));
+    const extraUndone = shuffled(allUndone.filter(habit => !selectedIds.has(habit.id)));
+    while (selectedUndone < neededWhite && extraUndone.length) {
+      const replaceIndex = selected.findIndex(habit => !!log[habit.id]);
+      if (replaceIndex < 0) break;
+      selected[replaceIndex] = extraUndone.shift();
+      selectedUndone++;
+    }
+    return shuffled(selected);
+  }
+
+  function buildBingoCells() {
+    const cfg = bingoGridConfig();
+    const log = state.log[todayKey()] || {};
+    const habits = pickBingoHabits(cfg, log).slice(0, cfg.total);
+    const cells = habits.map(habit => ({
+      habitId: habit.id,
+      title: habit.title,
+      icon: habit.icon,
+      done: !!log[habit.id],
+      empty: false
+    }));
+
+    let useFree = true;
+    while (cells.length < cfg.total) {
+      if (useFree) {
+        cells.push({ title: 'FREE', icon: 'ic-star', done: true, empty: false, free: true });
+      } else {
+        cells.push({ title: '橡實', done: false, empty: true, acorn: true });
+      }
+      useFree = !useFree;
+    }
+    return shuffled(cells);
+  }
+
+  function renderBingoCells(cells, spinning = false, cfg = bingoGridConfig()) {
+    const board = document.getElementById('bingo-board');
+    board.className = `bingo-board cols-${cfg.cols} rows-${cfg.rows}${spinning ? ' spinning' : ''}`;
+    board.innerHTML = '';
+    cells.forEach(cell => {
+      const el = document.createElement('div');
+      el.className = 'bingo-cell' + (cell.done ? ' done' : '') + (cell.empty ? ' empty' : '') + (cell.free ? ' free' : '') + (cell.acorn ? ' acorn' : '');
+      el.innerHTML = `
+        <div class="bingo-cell-icon">${cell.acorn ? acornSvg(24) : iconSvg(cell.icon || 'ic-star', 24, '#5E5453')}</div>
+        <div class="bingo-cell-title"></div>
+      `;
+      el.querySelector('.bingo-cell-title').textContent = cell.title;
+      board.appendChild(el);
+    });
+  }
+
+  function bingoLineCandidates(cfg) {
+    const lines = [];
+    for (let r = 0; r < cfg.rows; r++) {
+      const indexes = [];
+      for (let c = 0; c < cfg.cols; c++) indexes.push(r * cfg.cols + c);
+      lines.push({ indexes, x1: 6, y1: ((r + 0.5) / cfg.rows) * 100, x2: 94, y2: ((r + 0.5) / cfg.rows) * 100 });
+    }
+    for (let c = 0; c < cfg.cols; c++) {
+      const indexes = [];
+      for (let r = 0; r < cfg.rows; r++) indexes.push(r * cfg.cols + c);
+      lines.push({ indexes, x1: ((c + 0.5) / cfg.cols) * 100, y1: 6, x2: ((c + 0.5) / cfg.cols) * 100, y2: 94 });
+    }
+    if (cfg.rows === cfg.cols) {
+      const down = [];
+      const up = [];
+      for (let i = 0; i < cfg.rows; i++) {
+        down.push(i * cfg.cols + i);
+        up.push(i * cfg.cols + (cfg.cols - 1 - i));
+      }
+      lines.push({ indexes: down, x1: 8, y1: 8, x2: 92, y2: 92 });
+      lines.push({ indexes: up, x1: 92, y1: 8, x2: 8, y2: 92 });
+    }
+    return lines;
+  }
+
+  function completedBingoLines(cells, cfg = bingoGridConfig()) {
+    return bingoLineCandidates(cfg).filter(line =>
+      line.indexes.every(i => cells[i] && cells[i].done && !cells[i].empty)
+    );
+  }
+
+  function drawBingoLine(line, index) {
+    const svg = document.getElementById('bingo-lines');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    path.setAttribute('x1', line.x1);
+    path.setAttribute('y1', line.y1);
+    path.setAttribute('x2', line.x2);
+    path.setAttribute('y2', line.y2);
+    path.setAttribute('class', 'bingo-line');
+    svg.appendChild(path);
+    setTimeout(() => {
+      path.classList.add('show');
+      bingoLineSfx(index);
+    }, index * 620);
+  }
+
+  function showBingoResult(bonus, before, after, fromEl) {
+    const box = document.getElementById('bingo-result');
+    const num = document.getElementById('bingo-bonus-num');
+    const sub = document.getElementById('bingo-result-sub');
+    box.hidden = false;
+    sub.textContent = bonus > 0 ? '顆橡實已加進今天' : '今天沒有連線，明天再試';
+    tweenNumber(num, 0, bonus, 900);
+    if (bonus > 0) {
+      bingoTotalSfx();
+      const dockIcon = document.querySelector('.dock-label svg');
+      const curEl = document.getElementById('dock-current');
+      flyAcorn(fromEl || box, dockIcon, bonus, () => {
+        tweenNumber(curEl, before, after, 700);
+        curEl.classList.remove('bump');
+        void curEl.offsetWidth;
+        curEl.classList.add('bump');
+        updateDock();
+      });
+    } else {
+      updateDock();
+    }
+  }
+
+  function finishBingoRound() {
+    if (bingoBusy) return;
+    bingoBusy = true;
+    stopBingoSpin();
+
+    const today = todayKey();
+    state.bingoBonuses = state.bingoBonuses || {};
+    if (state.bingoBonuses[today]) {
+      renderBingo();
+      return;
+    }
+
+    const before = todayPoints();
+    const cfg = bingoGridConfig();
+    const cells = buildBingoCells();
+    renderBingoCells(cells, false);
+    const lines = completedBingoLines(cells, cfg);
+    const bonus = lines.length;
+    const after = before + bonus;
+    const btn = document.getElementById('btn-bingo-spin');
+    btn.disabled = true;
+    btn.textContent = '今天已加碼';
+    document.getElementById('bingo-lines').innerHTML = '';
+    lines.forEach(drawBingoLine);
+
+    state.bingoBonuses[today] = {
+      bonus,
+      lines: lines.length,
+      cells,
+      cfg,
+      at: new Date().toISOString()
+    };
+    if (bonus > 0) state.points += bonus;
+    save();
+
+    setTimeout(() => showBingoResult(bonus, before, after, btn), 650 * lines.length + 450);
+  }
+
+  function renderBingo() {
+    bingoBusy = false;
+    updateDock();
+    const today = todayKey();
+    const saved = (state.bingoBonuses || {})[today];
+    const btn = document.getElementById('btn-bingo-spin');
+    const result = document.getElementById('bingo-result');
+    const sub = document.getElementById('bingo-sub');
+    const num = document.getElementById('bingo-bonus-num');
+    const resultSub = document.getElementById('bingo-result-sub');
+    document.getElementById('bingo-lines').innerHTML = '';
+    result.hidden = true;
+
+    if (saved) {
+      stopBingoSpin();
+      const savedCells = saved.cells || buildBingoCells();
+      const savedCfg = saved.cfg || bingoConfigFromCells(savedCells);
+      renderBingoCells(savedCells, false, savedCfg);
+      completedBingoLines(savedCells, savedCfg).forEach((line) => {
+        const svg = document.getElementById('bingo-lines');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        path.setAttribute('x1', line.x1);
+        path.setAttribute('y1', line.y1);
+        path.setAttribute('x2', line.x2);
+        path.setAttribute('y2', line.y2);
+        path.setAttribute('class', 'bingo-line show');
+        svg.appendChild(path);
+      });
+      btn.disabled = true;
+      btn.textContent = '今天已加碼';
+      result.hidden = false;
+      num.textContent = saved.bonus || 0;
+      resultSub.textContent = saved.bonus > 0 ? '顆橡實已加進今天' : '今天沒有連線，明天再試';
+      sub.textContent = `今天已加碼 +${saved.bonus || 0} 顆，明天再來。`;
+      return;
+    }
+
+    btn.disabled = false;
+    btn.textContent = '好手氣加碼';
+    sub.textContent = '粉色格子連成線，就能加碼橡實。';
+    let cells = buildBingoCells();
+    renderBingoCells(cells, true);
+    stopBingoSpin();
+    bingoTimer = setInterval(() => {
+      cells = buildBingoCells();
+      renderBingoCells(cells, true);
+    }, 170);
+    bingoTickTimer = setInterval(bingoTickSfx, 340);
+  }
+
+  function openBingoIntroModal() {
+    openModal(`
+      <h3 class="modal-title">好手氣賓果</h3>
+      <p class="modal-sub">每天只能玩一次，連線可以加碼橡實！</p>
+      <div class="bingo-intro-card">
+        <div>粉色格子代表今天已完成的任務。</div>
+        <div>直線、橫線、對角線都算賓果。</div>
+        <div>FREE 格是送你的，會一起幫忙連線。</div>
+      </div>
+      <div class="modal-actions" style="margin-top:18px;">
+        <button type="button" class="btn btn-primary" data-bingo-intro-ok>知道了</button>
+      </div>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-bingo-intro-ok]').onclick = closeModal;
+  }
+
+  function openBingoFromSquirrel() {
+    goToScreen('bingo');
+    setTimeout(openBingoIntroModal, 120);
   }
 
   /* ---------- render: rewards ---------- */
@@ -1053,11 +1341,13 @@
   }
   function dayPoints(dateKey) {
     const log = state.log[dateKey] || {};
+    const bonus = ((state.bingoBonuses || {})[dateKey] || {}).bonus || 0;
     return state.habits.reduce((s, h) => s + (log[h.id] ? h.points : 0), 0)
          + Object.entries(log).reduce((s, [hid, v]) => {
              // 已被刪掉的習慣：log 還在但找不到 habit，跳過
              return s;
-           }, 0);
+           }, 0)
+         + bonus;
   }
   function renderMine() {
     updateDock();
@@ -1132,6 +1422,7 @@
       const log = state.log[k] || {};
       let score = 0;
       state.habits.forEach(h => { if (log[h.id]) score += h.points; });
+      score += ((state.bingoBonuses || {})[k] || {}).bonus || 0;
       dayScores[k] = score;
     }
     const maxScore = Math.max(1, ...Object.values(dayScores));
@@ -1428,6 +1719,9 @@
   document.getElementById('btn-manage-habits').onclick = openManageHabits;
   document.getElementById('btn-manage-rewards').onclick = openManageRewards;
   document.getElementById('btn-edit-name').onclick = openNameForm;
+  document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
+  document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
+  document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
   document.getElementById('unlock-cta').onclick = () => { stopFestivities(); showScreen('screen-rewards'); renderRewards(); };
 
   /* ---------- init ---------- */
