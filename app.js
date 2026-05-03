@@ -787,7 +787,7 @@
       card.innerHTML = `
         ${can ? '<span class="ribbon">✦ 已解鎖</span>' : ''}
         <div class="reward-icon-box">
-          ${iconSvg(rw.icon, 32, can ? '#5E5453' : '#9c938f')}
+          ${iconSvg(rw.icon, 32, can ? '#FEFBF9' : '#9c938f')}
           ${can ? '' : '<div class="reward-lock-overlay"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>'}
         </div>
         <div class="reward-text">
@@ -798,7 +798,7 @@
               ${acornSvg(14)}
               ${rw.cost} 顆
             </span>
-            ${can ? '<span class="tag ok"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg> 可兌換</span>' : `<span class="tag warn">還差 ${need} 顆</span>`}
+            ${can ? '<span class="tag ok"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FEFBF9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg> 可兌換</span>' : `<span class="tag warn">還差 ${need} 顆</span>`}
           </div>
         </div>
         <div class="reward-actions">
@@ -845,7 +845,7 @@
   function spawnConfettiBatch(count) {
     // 彩帶感：70% 長條 / 30% 圓點，下降 4-6 秒，sway ±70px
     const screen = document.getElementById('screen-unlock');
-    const colors = ['#DA844F','#C78E78','#F5A3A4','#FBE5A8','#B8C99A','#DB6D66'];
+    const colors = ['#DA844F','#C78E78','#F5A3A4','#EBB95E','#A4AE92','#DB6D66'];
     for (let i = 0; i < count; i++) {
       const p = document.createElement('div');
       p.className = 'confetti-piece';
@@ -888,10 +888,10 @@
     // 對照設計圖布局：避開中間圓圈（top 38-68%, left 18-82%）
     const ITEMS = [
       // 上方（左上 → 右上）
-      { x: 18, y:  9, w: 26, h: 26, shape: 'square',       color: '#FBE5A8', rot:  18 },  // 黃方塊
+      { x: 18, y:  9, w: 26, h: 26, shape: 'square',       color: '#EBB95E', rot:  18 },  // 黃方塊
       { x:  8, y: 18, w: 22, h: 22, shape: 'square',       color: '#FFF3EE', rot: -12 },  // 白方塊
       { x: 30, y: 22, w: 16, h: 16, shape: 'circle',       color: '#F5A3A4', rot:   0 },  // 粉點
-      { x: 50, y: 14, w: 26, h: 13, shape: 'ellipse',      color: '#B8C99A', rot: -10 },  // 綠橢圓
+      { x: 50, y: 14, w: 26, h: 13, shape: 'ellipse',      color: '#A4AE92', rot: -10 },  // 綠橢圓
       { x: 72, y: 12, w: 24, h: 12, shape: 'ellipse',      color: '#F7DCD1', rot:  20 },  // 粉橢圓
       { x: 86, y: 22, w: 20, h: 20, shape: 'square',       color: '#FFF3EE', rot:  10 },  // 白方塊
       // 中段兩側
@@ -905,11 +905,11 @@
       { x:  8, y: 92, w: 22, h:  8, shape: 'stripe',       color: '#DA844F', rot:  -8 },  // 橘條
       // 下方中
       { x: 38, y: 88, w: 14, h: 14, shape: 'circle',       color: '#F5A3A4', rot:   0 },  // 粉點
-      { x: 50, y: 80, w: 28, h: 28, shape: 'starOutline',  color: '#FBE5A8', rot:  20 },  // 黃星空
+      { x: 50, y: 80, w: 28, h: 28, shape: 'starOutline',  color: '#EBB95E', rot:  20 },  // 黃星空
       { x: 60, y: 92, w: 22, h:  8, shape: 'stripe',       color: '#C78E78', rot:  10 },  // 棕條
       // 下方右
       { x: 80, y: 72, w: 28, h: 28, shape: 'heartOutline', color: '#F5A3A4', rot:  18 },  // 粉愛心
-      { x: 92, y: 86, w: 14, h: 14, shape: 'circle',       color: '#FBE5A8', rot:   0 },  // 黃點
+      { x: 92, y: 86, w: 14, h: 14, shape: 'circle',       color: '#EBB95E', rot:   0 },  // 黃點
     ];
     ITEMS.forEach((it, i) => {
       const el = document.createElement('div');
@@ -1452,7 +1452,7 @@
       <div class="mine-cal-head">
         <div class="mine-cal-month">${monthName}</div>
         <div class="mine-cal-legend">
-          少 <i style="background:#FFF3EE"></i><i style="background:#FBE5A8"></i><i style="background:#F7DCD1"></i><i style="background:#e89a6a"></i><i style="background:var(--orange)"></i> 多
+          少 <i style="background:#FFF3EE"></i><i style="background:#F7DCD1"></i><i style="background:#EBB95E"></i><i style="background:#e89a6a"></i><i style="background:var(--orange)"></i> 多
         </div>
       </div>
       <div class="mine-cal-grid">${cells}</div>

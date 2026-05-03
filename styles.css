@@ -18,8 +18,8 @@
   --ink-muted: #9c938f;
   --pink: #DB6D66;
   --cheek: #F5A3A4;
-  --honey: #FBE5A8;
-  --moss: #B8C99A;
+  --honey: #EBB95E;
+  --moss: #A4AE92;
 
   --radius-sm: 12px;
   --radius: 18px;
@@ -411,7 +411,8 @@ body.on-unlock #dock { display: none; }
   opacity: .72;
 }
 .bingo-cell.free {
-  background: var(--honey);
+  background: #EBB95E;
+  color: var(--white);
   border-color: rgba(218,132,79,0.22);
   box-shadow: 0 8px 22px rgba(218,132,79,0.14);
 }
@@ -596,7 +597,7 @@ body.on-unlock #dock { display: none; }
 .reward.next-goal::before {
   content: "下個目標";
   position: absolute; top: -10px; right: 14px;
-  background: var(--honey); color: var(--ink);
+  background: #EBB95E; color: var(--white);
   padding: 4px 12px; border-radius: var(--pill);
   font-size: 11px; font-weight: 600; border: 1px solid var(--hairline);
   letter-spacing: 0.06em;
@@ -611,13 +612,16 @@ body.on-unlock #dock { display: none; }
 }
 .reward-icon-box {
   width: 72px; height: 72px; border-radius: 18px;
-  background: var(--honey); border: 1px solid var(--hairline);
+  background: #EBB95E; border: 1px solid var(--hairline);
   display: grid; place-items: center; flex-shrink: 0;
   position: relative;
 }
+.reward .reward-icon-box {
+  background: #EBB95E;
+}
 .reward.affordable .reward-icon-box {
-  background: var(--honey);
-  box-shadow: 0 0 24px rgba(251,229,168,0.6);
+  background: #EBB95E;
+  box-shadow: 0 0 24px rgba(235,185,94,0.42);
   border-color: transparent;
 }
 .reward.locked .reward-icon-box { background: var(--pink-bg); }
@@ -639,8 +643,9 @@ body.on-unlock #dock { display: none; }
   border: 1px solid var(--hairline);
   letter-spacing: 0.03em;
 }
-.tag.ok { background: var(--moss); color: var(--ink); border-color: transparent; }
-.tag.warn { background: var(--honey); border-color: transparent; }
+.tag.ok { background: var(--moss); color: var(--white); border-color: transparent; }
+.tag.ok svg { stroke: var(--white); }
+.tag.warn { background: #EBB95E; color: var(--white); border-color: transparent; }
 .reward .ribbon {
   position: absolute; top: -8px; right: 14px;
   background: var(--orange); color: var(--white);
@@ -883,8 +888,8 @@ body.on-unlock #dock { display: none; }
   border: 1px solid var(--orange);
   box-shadow: var(--ring-warm);
 }
-.mine-cal-day.lv1 { background: #FBE5A8; color: var(--ink); border-color: transparent; }
-.mine-cal-day.lv2 { background: #F7DCD1; color: var(--ink); border-color: transparent; }
+.mine-cal-day.lv1 { background: #F7DCD1; color: var(--ink); border-color: transparent; }
+.mine-cal-day.lv2 { background: #EBB95E; color: var(--white); border-color: transparent; }
 .mine-cal-day.lv3 { background: #e89a6a; color: var(--white); border-color: transparent; }
 .mine-cal-day.lv4 { background: var(--orange); color: var(--white); border-color: transparent; }
 
