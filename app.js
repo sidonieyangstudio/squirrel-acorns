@@ -50,6 +50,7 @@
     lastActiveDate: null,
     redeemed: [],                    // [{ id, rewardId, title, icon, cost, date }]
     bingoBonuses: {},                // { '2026-05-01': { bonus, lines, at } }
+    timedRuns: {},                   // { '2026-05-01': { habitId: { startedAt, expiresAt } } }
     parentPin: '',                   // 家長密碼 4 位數字（空 = 未設定）
     parentSecretQ: '',               // 秘密題目（提示用）
     parentSecretA: ''                // 答案，比對時統一 toLowerCase + trim
@@ -84,6 +85,58 @@
     localStorage.setItem(KEY, JSON.stringify(state));
   }
 
+  function isLogDone(value) {
+    return value === true || !!(value && value.done);
+  }
+  function isTimedHabit(habit) {
+    return !!(habit && habit.timed && habit.timerMinutes);
+  }
+  function habitBasePoints(habit) {
+    return Math.max(1, parseInt(habit.points, 10) || 1);
+  }
+  function habitFullPoints(habit) {
+    return habitBasePoints(habit) * (isTimedHabit(habit) ? 2 : 1);
+  }
+  function logEarnedPoints(habit, value) {
+    if (!isLogDone(value)) return 0;
+    if (value && typeof value === 'object' && Number.isFinite(value.points)) return value.points;
+    return habitBasePoints(habit);
+  }
+  function todayTimedRuns() {
+    const today = todayKey();
+    state.timedRuns = state.timedRuns || {};
+    state.timedRuns[today] = state.timedRuns[today] || {};
+    return state.timedRuns[today];
+  }
+  function timedRunFor(habit) {
+    return todayTimedRuns()[habit.id] || null;
+  }
+  function isTimedExpired(habit, log, now = Date.now()) {
+    if (!isTimedHabit(habit) || isLogDone(log[habit.id])) return false;
+    const run = timedRunFor(habit);
+    return !!(run && run.expiresAt && now >= run.expiresAt);
+  }
+  function visibleHabitsToday() {
+    const today = todayKey();
+    const log = state.log[today] || {};
+    const now = Date.now();
+    return state.habits.filter(habit => !isTimedExpired(habit, log, now));
+  }
+  function formatDuration(minutes) {
+    const mins = Math.max(1, parseInt(minutes, 10) || 1);
+    if (mins % 60 === 0) return `${mins / 60} 小時`;
+    if (mins > 60) return `${Math.floor(mins / 60)} 小時 ${mins % 60} 分鐘`;
+    return `${mins} 分鐘`;
+  }
+  function formatCountdown(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${m}:${String(s).padStart(2,'0')}`;
+  }
+
   /* ---------- 每日重置：跨日打開時，今天的勾選清空（但 state.points 累積保留） ---------- */
   function dailyReset() {
     const today = todayKey();
@@ -103,7 +156,7 @@
   function refreshStreak() {
     const today = todayKey();
     const todayLog = state.log[today] || {};
-    const anyToday = Object.values(todayLog).some(v => v);
+    const anyToday = Object.values(todayLog).some(isLogDone);
     if (anyToday) {
       if (state.lastActiveDate === today) return;
       const y = new Date(); y.setDate(y.getDate()-1);
@@ -428,44 +481,70 @@
   /* ---------- points helpers ---------- */
   function todayPoints() {
     const log = state.log[todayKey()] || {};
-    const habitPoints = state.habits.reduce((sum, hab) => sum + (log[hab.id] ? hab.points : 0), 0);
+    const habitPoints = state.habits.reduce((sum, hab) => sum + logEarnedPoints(hab, log[hab.id]), 0);
     const bonus = ((state.bingoBonuses || {})[todayKey()] || {}).bonus || 0;
     return habitPoints + bonus;
   }
   function maxPointsToday() {
-    return state.habits.reduce((s, h) => s + h.points, 0);
+    return visibleHabitsToday().reduce((s, h) => s + habitFullPoints(h), 0);
   }
 
   /* ---------- render: today ---------- */
+  let todayCountdownTimer = null;
+  function scheduleTodayCountdown() {
+    if (todayCountdownTimer) { clearInterval(todayCountdownTimer); todayCountdownTimer = null; }
+    const today = todayKey();
+    const log = state.log[today] || {};
+    const now = Date.now();
+    const hasActiveTimer = state.habits.some(habit => {
+      const run = isTimedHabit(habit) ? timedRunFor(habit) : null;
+      return run && !isLogDone(log[habit.id]) && run.expiresAt > now;
+    });
+    if (hasActiveTimer) todayCountdownTimer = setInterval(renderToday, 1000);
+  }
+
   function renderToday() {
     const today = todayKey();
     const log = state.log[today] || {};
     const list = document.getElementById('habit-list');
+    const visibleHabits = visibleHabitsToday();
     list.innerHTML = '';
 
-    if (state.habits.length === 0) {
-      list.innerHTML = '<div class="empty">還沒有習慣～<br>點下方「管理習慣」加一個吧！</div>';
+    if (visibleHabits.length === 0) {
+      list.innerHTML = state.habits.length === 0
+        ? '<div class="empty">還沒有習慣～<br>點下方「管理習慣」加一個吧！</div>'
+        : '<div class="empty">今天的限時任務時間到了～<br>明天再來挑戰！</div>';
     } else {
-      state.habits.forEach(habit => {
-        const done = !!log[habit.id];
+      visibleHabits.forEach(habit => {
+        const done = isLogDone(log[habit.id]);
+        const timed = isTimedHabit(habit);
+        const run = timed ? timedRunFor(habit) : null;
+        const started = !!run;
+        const remaining = run ? run.expiresAt - Date.now() : 0;
+        const points = timed ? habitFullPoints(habit) : habitBasePoints(habit);
         const row = document.createElement('div');
-        row.className = 'habit' + (done ? ' done' : '');
+        row.className = 'habit' + (done ? ' done' : '') + (timed ? ' timed' : '') + (started && !done ? ' timing' : '');
         row.innerHTML = `
           <div class="habit-icon-box">${iconSvg(habit.icon, 28, '#5E5453')}</div>
           <div class="habit-text">
             <div class="habit-title"></div>
             <div class="habit-sub">
               ${acornSvg(16)}
-              <span class="habit-points">+${habit.points} 顆橡實</span>
+              <span class="habit-points">+${points} 顆橡實</span>
+              ${timed ? '<span class="timed-badge">限時雙倍</span>' : ''}
+              ${timed && !started ? `<span class="timer-pill">${formatDuration(habit.timerMinutes)}</span>` : ''}
+              ${timed && started && !done ? `<span class="timer-pill live">剩 ${formatCountdown(remaining)}</span>` : ''}
             </div>
           </div>
           <div class="habit-row-actions">
             <button class="habit-edit" data-edit="${habit.id}" aria-label="編輯">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
             </button>
-            <button class="check ${done ? 'done' : ''}" data-toggle="${habit.id}" aria-label="勾選">
-              ${done ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>' : ''}
-            </button>
+            ${timed && !started && !done
+              ? `<button class="btn btn-sm timed-start" data-start-timed="${habit.id}">開始</button>`
+              : `<button class="check ${done ? 'done' : ''}" data-toggle="${habit.id}" aria-label="勾選">
+                  ${done ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>' : ''}
+                </button>`}
           </div>
         `;
         row.querySelector('.habit-title').textContent = habit.title;
@@ -474,7 +553,7 @@
     }
 
     document.getElementById('habit-count').textContent =
-      state.habits.length ? `${Object.keys(log).filter(k=>log[k]).length}/${state.habits.length}` : '';
+      visibleHabits.length ? `${visibleHabits.filter(h=>isLogDone(log[h.id])).length}/${visibleHabits.length}` : '';
 
     // dock
     const cur = todayPoints();
@@ -487,6 +566,7 @@
     const week = ['日','一','二','三','四','五','六'][d.getDay()];
     document.getElementById('today-date').textContent =
       `${d.getMonth()+1}月${d.getDate()}日 · 星期${week}`;
+    scheduleTodayCountdown();
   }
 
   /* ---------- render: bingo ---------- */
@@ -525,15 +605,15 @@
     const selected = shuffled(all).slice(0, cfg.total);
     if (cfg.total !== 9) return selected;
 
-    const allUndone = all.filter(habit => !log[habit.id]);
+    const allUndone = all.filter(habit => !isLogDone(log[habit.id]));
     const neededWhite = Math.min(2, allUndone.length);
-    let selectedUndone = selected.filter(habit => !log[habit.id]).length;
+    let selectedUndone = selected.filter(habit => !isLogDone(log[habit.id])).length;
     if (selectedUndone >= neededWhite) return selected;
 
     const selectedIds = new Set(selected.map(habit => habit.id));
     const extraUndone = shuffled(allUndone.filter(habit => !selectedIds.has(habit.id)));
     while (selectedUndone < neededWhite && extraUndone.length) {
-      const replaceIndex = selected.findIndex(habit => !!log[habit.id]);
+      const replaceIndex = selected.findIndex(habit => isLogDone(log[habit.id]));
       if (replaceIndex < 0) break;
       selected[replaceIndex] = extraUndone.shift();
       selectedUndone++;
@@ -549,7 +629,7 @@
       habitId: habit.id,
       title: habit.title,
       icon: habit.icon,
-      done: !!log[habit.id],
+      done: isLogDone(log[habit.id]),
       empty: false
     }));
 
@@ -938,19 +1018,46 @@
   }
 
   /* ---------- toggle habit ---------- */
+  function startTimedHabit(id) {
+    const habit = state.habits.find(h => h.id === id);
+    if (!isTimedHabit(habit)) return;
+    const runs = todayTimedRuns();
+    const now = Date.now();
+    runs[id] = {
+      startedAt: now,
+      expiresAt: now + habit.timerMinutes * 60 * 1000
+    };
+    save();
+    renderToday();
+  }
+
   function toggleHabit(id, sourceEl) {
     const today = todayKey();
     const log = state.log[today] || {};
     const habit = state.habits.find(h => h.id === id);
     if (!habit) return;
-    const wasDone = !!log[id];
+    const timed = isTimedHabit(habit);
+    const run = timed ? timedRunFor(habit) : null;
+    if (timed && !run && !isLogDone(log[id])) {
+      startTimedHabit(id);
+      return;
+    }
+    if (timed && isTimedExpired(habit, log)) {
+      toast('時間到了，明天再挑戰');
+      renderToday();
+      return;
+    }
+    const wasDone = isLogDone(log[id]);
+    const earnedPoints = wasDone ? logEarnedPoints(habit, log[id]) : habitFullPoints(habit);
     const before = todayPoints();
     if (wasDone) {
       delete log[id];
-      state.points = Math.max(0, state.points - habit.points);
+      state.points = Math.max(0, state.points - earnedPoints);
     } else {
-      log[id] = true;
-      state.points += habit.points;
+      log[id] = timed
+        ? { done: true, points: earnedPoints, timed: true, completedAt: new Date().toISOString() }
+        : { done: true, points: earnedPoints, completedAt: new Date().toISOString() };
+      state.points += earnedPoints;
     }
     state.log[today] = log;
     refreshStreak();
@@ -966,11 +1073,11 @@
       }
 
       // 2. 顏色改完 → 飛 N 顆橡實 + 叮 N 聲 + 數字跳
-      const n = Math.max(1, habit.points);
+      const n = Math.max(1, earnedPoints);
       ding(n);
       const dockEl = document.querySelector('.dock-label svg');
       flyAcorn(sourceEl, dockEl, n);
-      const after = before + habit.points;
+      const after = before + earnedPoints;
       const curEl = document.getElementById('dock-current');
       if (curEl) {
         tweenNumber(curEl, before, after, Math.min(1500, 600 + n * 60));
@@ -1052,7 +1159,11 @@
   /* ---------- habit form ---------- */
   function openHabitForm(habit) {
     const isNew = !habit;
-    if (isNew) habit = { id: h(), title: '', icon: 'ic-star', points: 2 };
+    if (isNew) habit = { id: h(), title: '', icon: 'ic-star', points: 2, timed: false, timerMinutes: 30 };
+    const timedChecked = isTimedHabit(habit);
+    const durationOptions = [30, 60, 180, 480];
+    const durationValue = durationOptions.includes(parseInt(habit.timerMinutes, 10)) ? String(habit.timerMinutes) : 'custom';
+    const customMinutes = durationValue === 'custom' ? Math.max(1, parseInt(habit.timerMinutes, 10) || 30) : 30;
     openModal(`
       <h3 class="modal-title">${isNew ? '新增習慣' : '編輯習慣'}</h3>
       <p class="modal-sub">每天勾選完成就能拿到橡實 🌰</p>
@@ -1065,6 +1176,29 @@
           <label>每次完成可得橡實</label>
           <input name="points" type="number" min="1" max="20" value="${habit.points}" required />
         </div>
+        <label class="switch-field">
+          <input type="checkbox" name="timed" ${timedChecked ? 'checked' : ''}>
+          <span>
+            <b>限時雙倍任務</b>
+            <small>孩子按開始後倒數，完成可拿雙倍橡實</small>
+          </span>
+        </label>
+        <div class="timed-fields" ${timedChecked ? '' : 'hidden'}>
+          <div class="field">
+            <label>倒數時間</label>
+            <select name="timerPreset">
+              <option value="30" ${durationValue === '30' ? 'selected' : ''}>30 分鐘</option>
+              <option value="60" ${durationValue === '60' ? 'selected' : ''}>1 小時</option>
+              <option value="180" ${durationValue === '180' ? 'selected' : ''}>3 小時</option>
+              <option value="480" ${durationValue === '480' ? 'selected' : ''}>8 小時</option>
+              <option value="custom" ${durationValue === 'custom' ? 'selected' : ''}>自訂</option>
+            </select>
+          </div>
+          <div class="field timed-custom" ${durationValue === 'custom' ? '' : 'hidden'}>
+            <label>自訂分鐘數</label>
+            <input name="timerCustom" type="number" min="1" max="1440" value="${customMinutes}" />
+          </div>
+        </div>
         ${iconPicker(habit.icon)}
         <div class="modal-actions" style="margin-top:18px;">
           <button type="button" class="btn" data-cancel>取消</button>
@@ -1075,6 +1209,17 @@
     `);
     const root = document.getElementById('modal');
     bindIconPicker(root);
+    const timedToggle = root.querySelector('input[name=timed]');
+    const timedFields = root.querySelector('.timed-fields');
+    const timerPreset = root.querySelector('select[name=timerPreset]');
+    const timedCustom = root.querySelector('.timed-custom');
+    function syncTimedFields() {
+      timedFields.hidden = !timedToggle.checked;
+      timedCustom.hidden = timerPreset.value !== 'custom';
+    }
+    timedToggle.onchange = syncTimedFields;
+    timerPreset.onchange = syncTimedFields;
+    syncTimedFields();
     root.querySelector('[data-cancel]').onclick = closeModal;
     const delBtn = root.querySelector('[data-delete-habit]');
     if (delBtn) delBtn.onclick = () => {
@@ -1082,17 +1227,24 @@
       state.habits = state.habits.filter(x => x.id !== habit.id);
       // also clear from today's log
       Object.values(state.log).forEach(l => delete l[habit.id]);
+      Object.values(state.timedRuns || {}).forEach(l => delete l[habit.id]);
       save(); closeModal(); renderToday();
     };
     root.querySelector('#habit-form').onsubmit = (e) => {
       e.preventDefault();
       const f = e.target;
+      let timerMinutes = parseInt(f.timerPreset.value, 10) || 30;
+      if (f.timerPreset.value === 'custom') timerMinutes = parseInt(f.timerCustom.value, 10) || 30;
+      timerMinutes = Math.max(1, Math.min(1440, timerMinutes));
       const data = {
         id: habit.id,
         title: f.title.value.trim() || '未命名',
         points: Math.max(1, parseInt(f.points.value, 10) || 1),
-        icon: f.icon.value
+        icon: f.icon.value,
+        timed: !!f.timed.checked,
+        timerMinutes: timerMinutes
       };
+      if (!data.timed) delete data.timerMinutes;
       if (isNew) state.habits.push(data);
       else Object.assign(state.habits.find(x=>x.id===habit.id), data);
       save(); closeModal(); renderToday();
@@ -1163,8 +1315,10 @@
     let dragRow = null;
     let dragId = null;
     let pointerId = null;
+    let startY = 0;
     let moved = false;
     const REORDER_MS = 500;
+    const SCROLL_CANCEL_PX = 10;
 
     function rows() {
       return Array.from(box.querySelectorAll(`.manage-row[data-${attr}]`));
@@ -1224,15 +1378,12 @@
       const row = e.currentTarget;
       if (e.target.closest('button')) return;
       activeRow = row;
+      startY = e.clientY;
       moved = false;
       pointerId = e.pointerId;
       window.addEventListener('pointermove', onPointerMove, { passive: false });
       window.addEventListener('pointerup', onPointerUp);
       window.addEventListener('pointercancel', onPointerUp);
-      if (sorting) {
-        startDrag(row, e);
-        return;
-      }
       row.classList.add('long-pressing');
       timer = setTimeout(() => {
         enterSortMode(row);
@@ -1243,6 +1394,13 @@
     function onPointerMove(e) {
       const row = activeRow;
       if (!row || (pointerId !== null && e.pointerId !== pointerId)) return;
+      if (!dragRow && Math.abs(e.clientY - startY) > SCROLL_CANCEL_PX) {
+        clearTimer(row);
+        clearWindowDragEvents();
+        activeRow = null;
+        pointerId = null;
+        return;
+      }
       if (!dragRow || dragId !== row.dataset[attr]) return;
       moved = true;
       e.preventDefault();
@@ -1299,7 +1457,9 @@
   function buildManageRow(item, attr) {
     const isHabit = attr === 'mh';
     const iconBox = isHabit ? 'habit-icon-box' : 'reward-icon-box';
-    const sub = isHabit ? `+${item.points} 顆橡實` : `${item.cost} 顆橡實`;
+    const sub = isHabit
+      ? (isTimedHabit(item) ? `限時 ${formatDuration(item.timerMinutes)} · +${habitFullPoints(item)} 顆橡實` : `+${item.points} 顆橡實`)
+      : `${item.cost} 顆橡實`;
     return `
       <div class="manage-row" data-${attr}="${item.id}">
         <div class="${iconBox}" style="width:40px;height:40px;border-radius:12px;">${iconSvg(item.icon, 22)}</div>
@@ -1410,7 +1570,7 @@
   function dayPoints(dateKey) {
     const log = state.log[dateKey] || {};
     const bonus = ((state.bingoBonuses || {})[dateKey] || {}).bonus || 0;
-    return state.habits.reduce((s, h) => s + (log[h.id] ? h.points : 0), 0)
+    return state.habits.reduce((s, h) => s + logEarnedPoints(h, log[h.id]), 0)
          + Object.entries(log).reduce((s, [hid, v]) => {
              // 已被刪掉的習慣：log 還在但找不到 habit，跳過
              return s;
@@ -1489,7 +1649,7 @@
       const k = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const log = state.log[k] || {};
       let score = 0;
-      state.habits.forEach(h => { if (log[h.id]) score += h.points; });
+      state.habits.forEach(h => { score += logEarnedPoints(h, log[h.id]); });
       score += ((state.bingoBonuses || {})[k] || {}).bonus || 0;
       dayScores[k] = score;
     }
@@ -1529,9 +1689,10 @@
 
   /* ---------- event delegation ---------- */
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-toggle],[data-edit],[data-redeem],[data-edit-reward],[data-back]');
+    const t = e.target.closest('[data-toggle],[data-start-timed],[data-edit],[data-redeem],[data-edit-reward],[data-back]');
     if (!t) return;
     if (t.dataset.toggle) toggleHabit(t.dataset.toggle, t);
+    else if (t.dataset.startTimed) startTimedHabit(t.dataset.startTimed);
     else if (t.dataset.edit) {
       const hb = state.habits.find(x => x.id === t.dataset.edit);
       if (hb) openHabitForm(hb);
