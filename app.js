@@ -2361,7 +2361,7 @@
     return child;
   }
 
-  function switchChildProfile(id, closeAfterSwitch = true) {
+  function switchChildProfile(id, closeAfterSwitch = false) {
     const next = appState.children.find(child => child.id === id);
     if (!next) return;
     appState.activeChildId = next.id;
@@ -2376,6 +2376,7 @@
     }
     refreshStreak();
     refreshCurrentScreen();
+    if (!closeAfterSwitch) openChildProfilesModal();
     toast(`已切換到 ${state.userName}`);
   }
 
@@ -2398,7 +2399,7 @@
     }).join('');
     openModal(`
       <h3 class="modal-title">孩子檔案</h3>
-      <p class="modal-sub">每個孩子各自有任務、橡實、獎勵、放學路線和紀錄。切換後會回到孩子模式。</p>
+      <p class="modal-sub">每個孩子各自有任務、橡實、獎勵、放學路線和紀錄。切換後會留在家長模式，點右上鎖頭才上鎖。</p>
       <div class="child-profile-list">${rows}</div>
       <hr style="margin: 20px 0 16px; border: 0; border-top: 1px solid var(--hairline);">
       <form id="new-child-form">
@@ -2459,9 +2460,8 @@
       appState.activeChildId = child.id;
       state = activeChildState();
       saveAll();
-      closeModal();
-      setParentMode(false);
       refreshCurrentScreen();
+      openChildProfilesModal();
       toast(`已新增並切換到 ${state.userName}`);
     };
   }
@@ -2874,7 +2874,6 @@
   document.getElementById('btn-manage-habits').onclick = openManageHabits;
   document.getElementById('btn-manage-rewards').onclick = openManageRewards;
   document.getElementById('btn-manage-after-school').onclick = openAfterSchoolSettingsForm;
-  document.getElementById('btn-edit-name').onclick = openNameForm;
   document.getElementById('btn-child-profiles').onclick = openChildProfilesModal;
   document.getElementById('btn-open-after-school').onclick = () => goToScreen('after-school');
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
