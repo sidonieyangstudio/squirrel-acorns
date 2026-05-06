@@ -389,7 +389,7 @@
     jackpotFanfare();
     setTimeout(coinShower, 180);
   }
-  /* ---------- 賭城贏錢音效套組：jackpot 三輪琶音 + 金幣嘩啦 + 鈴鐺 + 拉長歡呼 ---------- */
+  /* ---------- 慶祝音效套組：上揚琶音 + 金幣聲 + 鈴鐺 + 拉長歡呼 ---------- */
   function jackpotFanfare() {
     try {
       const ctx = ensureAudio();
@@ -501,7 +501,7 @@
     } catch (e) {}
   }
   function confettiSfx() {
-    // 賭城贏錢音：jackpot 琶音 + 金幣嘩啦 + 鈴鐺（不疊人群歡呼，避免怪聲）
+    // 慶祝音效：上揚琶音 + 金幣聲 + 鈴鐺（不疊人群歡呼，避免怪聲）
     jackpotFanfare();
     setTimeout(coinShower, 200);
     setTimeout(bellRing, 800);
@@ -2369,7 +2369,7 @@
           </div>
           <div class="field">
             <label>答案（可留空，大小寫不分）</label>
-            <input name="secretA" maxlength="40" placeholder="例：sidonie" />
+            <input name="secretA" maxlength="40" placeholder="例：sunny" />
           </div>
           <div class="modal-actions" style="margin-top:18px;">
             <button type="button" class="btn" data-skip>都不設，直接進</button>
