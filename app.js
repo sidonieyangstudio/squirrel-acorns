@@ -53,7 +53,10 @@
   ];
   const DEFAULT_AFTER_SCHOOL_SETTINGS = {
     pageTitle: '遊戲機門票＋睡前故事',
-    pageSubtitle: '先拿遊戲機門票，再把晚上整理好'
+    pageSubtitle: '先拿遊戲機門票，再把晚上整理好',
+    finalRewardName: '得到睡前故事',
+    finalRewardCardTitle: '睡前故事',
+    finalRewardCardSub: ''
   };
   const OLD_AFTER_SCHOOL_DEFAULTS = {
     pageTitle: '遊戲機門票',
@@ -601,6 +604,15 @@
     state.afterSchoolSettings.pageSubtitle = String(
       state.afterSchoolSettings.pageSubtitle || `先拿${state.afterSchoolSettings.ticketTitle || '遊戲機門票'}，再把晚上收好`
     ).trim();
+    state.afterSchoolSettings.finalRewardName = String(
+      state.afterSchoolSettings.finalRewardName || DEFAULT_AFTER_SCHOOL_SETTINGS.finalRewardName
+    ).trim();
+    state.afterSchoolSettings.finalRewardCardTitle = String(
+      state.afterSchoolSettings.finalRewardCardTitle || DEFAULT_AFTER_SCHOOL_SETTINGS.finalRewardCardTitle
+    ).trim();
+    state.afterSchoolSettings.finalRewardCardSub = String(
+      state.afterSchoolSettings.finalRewardCardSub || ''
+    ).trim();
     return state.afterSchoolSettings;
   }
 
@@ -663,6 +675,23 @@
   function afterSchoolTicketTitle(plan = afterSchoolPlan()) {
     const ticketPhase = plan.find(phase => phase.id === 'ticket');
     return stripPhasePrefix(ticketPhase && ticketPhase.title) || '遊戲機門票';
+  }
+
+  function cleanAfterSchoolTaskTitle(title) {
+    return String(title || '')
+      .replace(/\s*\d+\s*(分鐘|分|min|mins?)/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function afterSchoolPhaseTaskSummary(phaseId, plan = afterSchoolPlan()) {
+    const phase = plan.find(item => item.id === phaseId);
+    const names = (phase && Array.isArray(phase.tasks) ? phase.tasks : [])
+      .map(task => cleanAfterSchoolTaskTitle(task.title))
+      .filter(Boolean);
+    if (!names.length) return stripPhasePrefix(phase && phase.title) || '任務';
+    if (names.length <= 3) return names.join('、');
+    return `${names.slice(0, 3).join('、')}等 ${names.length} 項`;
   }
 
   function clockMinutes(value) {
@@ -1343,27 +1372,30 @@
     unlockReturnTarget = mode.startsWith('after-school') ? 'after-school' : 'rewards';
 
     if (mode === 'after-school') {
+      const cfg = afterSchoolSettings();
+      const cardSub = cfg.finalRewardCardSub || `${afterSchoolPhaseTaskSummary('evening')}都完成`;
       card.hidden = false;
       const icBox = card.querySelector('.reward-icon-box');
       icBox.innerHTML = iconSvg('ic-bookopen', 32, '#FEFBF9');
       if (titleEl) titleEl.textContent = '恭喜破關！';
-      if (nameTop) nameTop.textContent = '得到睡前故事';
-      if (subEl) subEl.textContent = '今晚的路線完成了';
-      if (sub2El) sub2El.textContent = '把故事燈打開吧';
-      document.getElementById('unlock-card-name').textContent = '睡前故事';
-      document.getElementById('unlock-card-sub').textContent = '9:00 前完成放學路線';
+      if (nameTop) nameTop.textContent = cfg.finalRewardName;
+      if (subEl) subEl.textContent = '第三階段任務完成了';
+      if (sub2El) sub2El.textContent = '晚上整理好，就可以進入睡前時光';
+      document.getElementById('unlock-card-name').textContent = cfg.finalRewardCardTitle;
+      document.getElementById('unlock-card-sub').textContent = cardSub;
       if (ctaEl) ctaEl.textContent = '✓ 回放學路線';
     } else if (mode === 'after-school-ticket') {
       const ticketName = afterSchoolTicketTitle();
+      const ticketTaskSummary = afterSchoolPhaseTaskSummary('ticket');
       card.hidden = false;
       const icBox = card.querySelector('.reward-icon-box');
       icBox.innerHTML = iconSvg('ic-gamepad', 32, '#FEFBF9');
       if (titleEl) titleEl.textContent = '恭喜過關！';
       if (nameTop) nameTop.textContent = '獲得門票';
-      if (subEl) subEl.textContent = '第二段任務完成了';
-      if (sub2El) sub2El.textContent = '先收好身體，再開心使用';
+      if (subEl) subEl.textContent = '第二階段任務完成了';
+      if (sub2El) sub2El.textContent = '先補充能量，再開心使用';
       document.getElementById('unlock-card-name').textContent = ticketName;
-      document.getElementById('unlock-card-sub').textContent = '中文故事、練琴都完成';
+      document.getElementById('unlock-card-sub').textContent = `${ticketTaskSummary}都完成`;
       if (ctaEl) ctaEl.textContent = '✓ 回放學路線';
     } else if (reward) {
       card.hidden = false;
@@ -1612,6 +1644,26 @@
           <label>主標題下方文字</label>
           <input name="pageSubtitle" maxlength="40" value="${escAttr(cfg.pageSubtitle)}" placeholder="例：先拿門票，再把晚上收好" />
         </div>
+        <div class="after-school-editor-phase">
+          <div class="after-school-editor-head">
+            <div>
+              <div class="after-school-editor-kicker">第三階段撒花獎勵</div>
+              <div class="after-school-editor-title">${escHtml(cfg.finalRewardCardTitle)}</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>畫面大字</label>
+            <input name="finalRewardName" maxlength="24" value="${escAttr(cfg.finalRewardName)}" placeholder="例：得到睡前故事" />
+          </div>
+          <div class="field">
+            <label>下方獎勵主標</label>
+            <input name="finalRewardCardTitle" maxlength="24" value="${escAttr(cfg.finalRewardCardTitle)}" placeholder="例：睡前故事" />
+          </div>
+          <div class="field">
+            <label>下方獎勵小字</label>
+            <input name="finalRewardCardSub" maxlength="40" value="${escAttr(cfg.finalRewardCardSub)}" placeholder="不填會自動帶入第三階段任務" />
+          </div>
+        </div>
         <div class="after-school-editor">
           ${plan.map((phase, index) => `
             <section class="after-school-editor-phase">
@@ -1683,7 +1735,10 @@
       }));
       state.afterSchoolSettings = {
         pageTitle: f.pageTitle.value.trim() || DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle,
-        pageSubtitle: f.pageSubtitle.value.trim() || DEFAULT_AFTER_SCHOOL_SETTINGS.pageSubtitle
+        pageSubtitle: f.pageSubtitle.value.trim() || DEFAULT_AFTER_SCHOOL_SETTINGS.pageSubtitle,
+        finalRewardName: f.finalRewardName.value.trim() || DEFAULT_AFTER_SCHOOL_SETTINGS.finalRewardName,
+        finalRewardCardTitle: f.finalRewardCardTitle.value.trim() || DEFAULT_AFTER_SCHOOL_SETTINGS.finalRewardCardTitle,
+        finalRewardCardSub: f.finalRewardCardSub.value.trim()
       };
       state.afterSchoolPlan = nextPlan;
       state.afterSchoolReminderLog = {};
