@@ -2105,7 +2105,7 @@
     let startY = 0;
     let moved = false;
     const REORDER_MS = 500;
-    const SCROLL_CANCEL_PX = 10;
+    const SCROLL_CANCEL_PX = 30;
 
     function rows() {
       return Array.from(box.querySelectorAll(`.manage-row[data-${attr}]`));
@@ -2181,7 +2181,10 @@
     function onPointerMove(e) {
       const row = activeRow;
       if (!row || (pointerId !== null && e.pointerId !== pointerId)) return;
-      if (!dragRow && Math.abs(e.clientY - startY) > SCROLL_CANCEL_PX) {
+      const cancelLongPress = window.SquirrelManageSort
+        ? window.SquirrelManageSort.shouldCancelLongPress(e.clientY - startY, SCROLL_CANCEL_PX)
+        : Math.abs(e.clientY - startY) > SCROLL_CANCEL_PX;
+      if (!dragRow && cancelLongPress) {
         clearTimer(row);
         clearWindowDragEvents();
         activeRow = null;
