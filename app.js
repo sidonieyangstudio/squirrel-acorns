@@ -7,6 +7,7 @@
   /* ---------- storage ---------- */
   const KEY = 'squirrel-points-v3';
   const KEY_OLD = 'squirrel-points-v2';
+  const ACTIVE_CHILD_KEY = 'squirrel-active-child-v1';
   const todayKey = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -107,7 +108,8 @@
 
   function h() { return Math.random().toString(36).slice(2, 9); }
 
-  let state = load();
+  let appState = load();
+  let state = activeChildState();
   if (removeLegacyDefaultHabits(state)) save();
 
   function removeLegacyDefaultHabits(nextState) {
@@ -129,11 +131,60 @@
     return true;
   }
 
+  function makeChildProfile(seed = {}, fallbackName = '小寶') {
+    const child = Object.assign(structuredClone(DEFAULT_STATE), seed || {});
+    child.id = String(child.id || `child-${h()}`);
+    child.userName = String(child.userName || fallbackName || '小寶').trim();
+    delete child.parentPin;
+    delete child.parentSecretQ;
+    delete child.parentSecretA;
+    return child;
+  }
+
+  function normalizeAppState(raw) {
+    if (raw && Array.isArray(raw.children)) {
+      const children = raw.children.length
+        ? raw.children.map((child, index) => makeChildProfile(child, index === 0 ? '小寶' : `孩子${index + 1}`))
+        : [makeChildProfile()];
+      let storedActiveId = '';
+      try {
+        storedActiveId = sessionStorage.getItem(ACTIVE_CHILD_KEY) || localStorage.getItem(ACTIVE_CHILD_KEY) || '';
+      } catch (e) {}
+      const requestedActiveId = storedActiveId || raw.activeChildId;
+      const activeChildId = children.some(child => child.id === requestedActiveId)
+        ? requestedActiveId
+        : children[0].id;
+      return {
+        version: 4,
+        activeChildId,
+        children,
+        parentPin: String(raw.parentPin || '').trim(),
+        parentSecretQ: String(raw.parentSecretQ || '').trim(),
+        parentSecretA: String(raw.parentSecretA || '').trim().toLowerCase()
+      };
+    }
+    const legacyChild = makeChildProfile(Object.assign(structuredClone(DEFAULT_STATE), raw || {}));
+    return {
+      version: 4,
+      activeChildId: legacyChild.id,
+      children: [legacyChild],
+      parentPin: String((raw && raw.parentPin) || '').trim(),
+      parentSecretQ: String((raw && raw.parentSecretQ) || '').trim(),
+      parentSecretA: String((raw && raw.parentSecretA) || '').trim().toLowerCase()
+    };
+  }
+
+  function activeChildState() {
+    const child = (appState.children || []).find(item => item.id === appState.activeChildId) || appState.children[0];
+    appState.activeChildId = child.id;
+    return child;
+  }
+
   function load() {
-    // v2 already exists → use it
+    // v3 / v4 already exists → use it
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) return Object.assign(structuredClone(DEFAULT_STATE), JSON.parse(raw));
+      if (raw) return normalizeAppState(JSON.parse(raw));
     } catch (e) {}
     // migrate from v1: keep points/streak/userName but use new default habits/rewards
     try {
@@ -145,13 +196,42 @@
         fresh.points = o.points || 0;
         fresh.streak = o.streak || 0;
         fresh.lastActiveDate = o.lastActiveDate || null;
-        return fresh;
+        return normalizeAppState(fresh);
       }
     } catch (e) {}
-    return structuredClone(DEFAULT_STATE);
+    return normalizeAppState(structuredClone(DEFAULT_STATE));
   }
   function save() {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const latest = JSON.parse(raw);
+        if (latest && Array.isArray(latest.children)) {
+          const activeId = state && state.id;
+          const latestChildren = latest.children.slice();
+          const index = latestChildren.findIndex(child => child && child.id === activeId);
+          if (index >= 0) latestChildren[index] = state;
+          else if (state) latestChildren.push(state);
+          for (const child of appState.children || []) {
+            if (child && !latestChildren.some(item => item && item.id === child.id)) {
+              latestChildren.push(child);
+            }
+          }
+          appState.children = latestChildren;
+        }
+      }
+    } catch (e) {}
+    saveAll();
+  }
+  function saveAll() {
+    localStorage.setItem(KEY, JSON.stringify(appState));
+    rememberActiveChild();
+  }
+  function rememberActiveChild() {
+    try {
+      sessionStorage.setItem(ACTIVE_CHILD_KEY, appState.activeChildId);
+      localStorage.setItem(ACTIVE_CHILD_KEY, appState.activeChildId);
+    } catch (e) {}
   }
 
   function isLogDone(value) {
@@ -2238,6 +2318,154 @@
     };
   }
 
+  /* ---------- child profiles ---------- */
+  function currentScreenId() {
+    return screens.find(id => {
+      const el = document.getElementById(id);
+      return el && !el.hidden;
+    }) || 'screen-today';
+  }
+
+  function refreshCurrentScreen() {
+    const id = currentScreenId();
+    if (id === 'screen-rewards') renderRewards();
+    else if (id === 'screen-mine') renderMine();
+    else if (id === 'screen-bingo') renderBingo();
+    else if (id === 'screen-after-school') renderAfterSchool();
+    else renderToday();
+    updateDockButtons(id);
+  }
+
+  function childProfileSummary(child) {
+    const rewardCount = (child.redeemed || []).length;
+    return `${child.points || 0} 顆橡實 · ${rewardCount} 筆兌換`;
+  }
+
+  function makeChildFromCurrent(name, copySettings) {
+    const child = makeChildProfile({ userName: name || '小朋友' }, name || '小朋友');
+    if (copySettings) {
+      child.habits = structuredClone(state.habits || []);
+      child.rewards = structuredClone(state.rewards || []);
+      child.afterSchoolSettings = structuredClone(afterSchoolSettings());
+      child.afterSchoolPlan = structuredClone(afterSchoolPlan());
+    }
+    child.points = 0;
+    child.log = {};
+    child.streak = 0;
+    child.lastActiveDate = null;
+    child.redeemed = [];
+    child.bingoBonuses = {};
+    child.timedRuns = {};
+    child.afterSchoolLog = {};
+    child.afterSchoolReminderLog = {};
+    return child;
+  }
+
+  function switchChildProfile(id, closeAfterSwitch = true) {
+    const next = appState.children.find(child => child.id === id);
+    if (!next) return;
+    appState.activeChildId = next.id;
+    state = activeChildState();
+    if (removeLegacyDefaultHabits(state)) {
+      // removeLegacyDefaultHabits mutates the active child profile.
+    }
+    save();
+    if (closeAfterSwitch) {
+      closeModal();
+      setParentMode(false);
+    }
+    refreshStreak();
+    refreshCurrentScreen();
+    toast(`已切換到 ${state.userName}`);
+  }
+
+  function openChildProfilesModal() {
+    const rows = appState.children.map(child => {
+      const active = child.id === appState.activeChildId;
+      return `
+        <div class="child-profile-row${active ? ' active' : ''}">
+          <div style="min-width:0;">
+            <div class="child-profile-name">${escHtml(child.userName || '小朋友')}${active ? ' · 目前' : ''}</div>
+            <div class="child-profile-meta">${escHtml(childProfileSummary(child))}</div>
+          </div>
+          <div class="child-profile-actions">
+            ${active ? '' : `<button type="button" class="btn btn-primary" data-switch-child="${escAttr(child.id)}">切換</button>`}
+            <button type="button" class="btn" data-rename-child="${escAttr(child.id)}">改名</button>
+            ${appState.children.length > 1 ? `<button type="button" class="btn btn-danger" data-delete-child="${escAttr(child.id)}">刪除</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    openModal(`
+      <h3 class="modal-title">孩子檔案</h3>
+      <p class="modal-sub">每個孩子各自有任務、橡實、獎勵、放學路線和紀錄。切換後會回到孩子模式。</p>
+      <div class="child-profile-list">${rows}</div>
+      <hr style="margin: 20px 0 16px; border: 0; border-top: 1px solid var(--hairline);">
+      <form id="new-child-form">
+        <div class="field">
+          <label>新增孩子</label>
+          <input name="childName" maxlength="10" placeholder="例：姊姊" />
+        </div>
+        <label class="checkline" style="margin-top:10px;">
+          <input type="checkbox" name="copySettings" checked />
+          複製目前孩子的任務、獎勵和放學路線
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-cancel>關閉</button>
+          <button type="submit" class="btn btn-primary">新增</button>
+        </div>
+      </form>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelectorAll('[data-switch-child]').forEach(btn => {
+      btn.onclick = () => switchChildProfile(btn.dataset.switchChild);
+    });
+    root.querySelectorAll('[data-rename-child]').forEach(btn => {
+      btn.onclick = () => {
+        const child = appState.children.find(item => item.id === btn.dataset.renameChild);
+        if (!child) return;
+        const name = prompt('孩子名字', child.userName || '小朋友');
+        if (name === null) return;
+        child.userName = name.trim() || child.userName || '小朋友';
+        if (child.id === appState.activeChildId) state = child;
+        saveAll();
+        openChildProfilesModal();
+        refreshCurrentScreen();
+      };
+    });
+    root.querySelectorAll('[data-delete-child]').forEach(btn => {
+      btn.onclick = () => {
+        const child = appState.children.find(item => item.id === btn.dataset.deleteChild);
+        if (!child) return;
+        if (appState.children.length <= 1) return;
+        if (!confirm(`刪除「${child.userName || '小朋友'}」的檔案嗎？\n\n這個孩子的橡實、任務、獎勵和紀錄都會刪掉，無法復原。`)) return;
+        appState.children = appState.children.filter(item => item.id !== child.id);
+        if (appState.activeChildId === child.id) {
+          appState.activeChildId = appState.children[0].id;
+          state = activeChildState();
+        }
+        saveAll();
+        openChildProfilesModal();
+        refreshCurrentScreen();
+      };
+    });
+    root.querySelector('#new-child-form').onsubmit = (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const name = f.childName.value.trim() || `孩子${appState.children.length + 1}`;
+      const child = makeChildFromCurrent(name, f.copySettings.checked);
+      appState.children.push(child);
+      appState.activeChildId = child.id;
+      state = activeChildState();
+      saveAll();
+      closeModal();
+      setParentMode(false);
+      refreshCurrentScreen();
+      toast(`已新增並切換到 ${state.userName}`);
+    };
+  }
+
   /* ---------- escape ---------- */
   function escHtml(s) { return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
   function escAttr(s) { return String(s).replace(/"/g, '&quot;'); }
@@ -2431,7 +2659,7 @@
       toast('回到孩子模式 ✦');
       return;
     }
-    if (!state.parentPin) {
+    if (!appState.parentPin) {
       // 第一次：引導設定（密碼/秘密題/答案皆可選）
       openModal(`
         <h3 class="modal-title">第一次設定家長模式</h3>
@@ -2466,16 +2694,16 @@
         const sq  = f.secretQ.value.trim();
         const sa  = f.secretA.value.trim().toLowerCase();
         if (pin && !/^\d{4}$/.test(pin)) { shakeModal(); return; }
-        state.parentPin = pin;
-        state.parentSecretQ = sq;
-        state.parentSecretA = sa;
-        save();
+        appState.parentPin = pin;
+        appState.parentSecretQ = sq;
+        appState.parentSecretA = sa;
+        saveAll();
         closeModal(); setParentMode(true); toast('已進入家長模式 ★');
       };
       return;
     }
     // 已設密碼：輸入驗證
-    const hasSecret = !!(state.parentSecretQ && state.parentSecretA);
+    const hasSecret = !!(appState.parentSecretQ && appState.parentSecretA);
     openModal(`
       <h3 class="modal-title">輸入家長密碼</h3>
       <p class="modal-sub">4 位數字</p>
@@ -2500,7 +2728,7 @@
     root.querySelector('#pin-check-form').onsubmit = (e) => {
       e.preventDefault();
       const pin = e.target.pin.value.trim();
-      if (pin === state.parentPin) {
+      if (pin === appState.parentPin) {
         closeModal(); setParentMode(true); toast('進入家長模式 ★');
       } else {
         shakeModal();
@@ -2512,7 +2740,7 @@
   function openSecretQModal() {
     openModal(`
       <h3 class="modal-title">秘密題救援</h3>
-      <p class="modal-sub">${escHtml(state.parentSecretQ || '')}</p>
+      <p class="modal-sub">${escHtml(appState.parentSecretQ || '')}</p>
       <form id="secret-form">
         <div class="field">
           <label>答案（大小寫不分）</label>
@@ -2529,7 +2757,7 @@
     root.querySelector('#secret-form').onsubmit = (e) => {
       e.preventDefault();
       const ans = e.target.ans.value.trim().toLowerCase();
-      if (ans && ans === (state.parentSecretA || '').toLowerCase()) {
+      if (ans && ans === (appState.parentSecretA || '').toLowerCase()) {
         closeModal(); setParentMode(true); toast('答對了！進入家長模式 ★');
       } else {
         shakeModal();
@@ -2540,10 +2768,10 @@
   }
   function hardResetParentLock() {
     if (!confirm('資料保留，只清掉密碼跟秘密題。確定嗎？')) return;
-    state.parentPin = '';
-    state.parentSecretQ = '';
-    state.parentSecretA = '';
-    save();
+    appState.parentPin = '';
+    appState.parentSecretQ = '';
+    appState.parentSecretA = '';
+    saveAll();
     setParentMode(true);
     toast('密碼已重置 · 進入家長模式 ★');
   }
@@ -2554,15 +2782,15 @@
       <form id="pin-change-form">
         <div class="field">
           <label>密碼（4 位數字，留空 = 移除）</label>
-          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="${state.parentPin ? '已設定（重打覆蓋）' : '未設定'}" />
+          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="${appState.parentPin ? '已設定（重打覆蓋）' : '未設定'}" />
         </div>
         <div class="field">
           <label>秘密題目</label>
-          <input name="secretQ" maxlength="40" value="${escAttr(state.parentSecretQ || '')}" placeholder="${state.parentSecretQ ? '' : '未設定'}" />
+          <input name="secretQ" maxlength="40" value="${escAttr(appState.parentSecretQ || '')}" placeholder="${appState.parentSecretQ ? '' : '未設定'}" />
         </div>
         <div class="field">
           <label>答案（大小寫不分）</label>
-          <input name="secretA" maxlength="40" placeholder="${state.parentSecretA ? '已設定（重打覆蓋；留空 = 移除）' : '未設定'}" />
+          <input name="secretA" maxlength="40" placeholder="${appState.parentSecretA ? '已設定（重打覆蓋；留空 = 移除）' : '未設定'}" />
         </div>
         <div class="modal-actions">
           <button type="button" class="btn" data-cancel>取消</button>
@@ -2585,10 +2813,10 @@
       const sq  = f.secretQ.value.trim();
       const sa  = f.secretA.value.trim().toLowerCase();
       if (pin && !/^\d{4}$/.test(pin)) { shakeModal(); return; }
-      state.parentPin = pin;
-      state.parentSecretQ = sq;
-      state.parentSecretA = sa;
-      save();
+      appState.parentPin = pin;
+      appState.parentSecretQ = sq;
+      appState.parentSecretA = sa;
+      saveAll();
       closeModal();
       toast('家長設定已更新 ★');
     };
@@ -2647,6 +2875,7 @@
   document.getElementById('btn-manage-rewards').onclick = openManageRewards;
   document.getElementById('btn-manage-after-school').onclick = openAfterSchoolSettingsForm;
   document.getElementById('btn-edit-name').onclick = openNameForm;
+  document.getElementById('btn-child-profiles').onclick = openChildProfilesModal;
   document.getElementById('btn-open-after-school').onclick = () => goToScreen('after-school');
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
