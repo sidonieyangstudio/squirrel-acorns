@@ -12,6 +12,7 @@
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   };
+  const childName = () => String(state.userName || '小朋友').trim() || '小朋友';
 
   const ICON_LIST = [
     'ic-cat','ic-candy','ic-flower','ic-gem','ic-gamepad','ic-gift',
@@ -922,7 +923,7 @@
     updateDock();
 
     // header
-    document.getElementById('user-name').textContent = state.userName;
+    document.getElementById('user-name').textContent = childName();
     document.getElementById('streak-days').textContent = state.streak;
     const d = new Date();
     const week = ['日','一','二','三','四','五','六'][d.getDay()];
@@ -958,6 +959,7 @@
     const ticketTitle = document.getElementById('after-school-ticket-title');
     const ticketReminder = document.getElementById('after-school-ticket-reminder');
 
+    document.getElementById('after-school-child-name').textContent = `嗨！${childName()}`;
     document.getElementById('after-school-now').textContent = `現在 ${formatClock()}`;
     document.getElementById('after-school-title').textContent = cfg.pageTitle;
     document.getElementById('after-school-sub').textContent = cfg.pageSubtitle;
@@ -1385,6 +1387,7 @@
   /* ---------- render: rewards ---------- */
   function renderRewards() {
     updateDock();
+    document.getElementById('rewards-page-title').textContent = `${childName()}的獎勵小店`;
     document.getElementById('rw-current').textContent = state.points;
     const todayEl = document.getElementById('rw-today');
     if (todayEl) todayEl.textContent = todayPoints();
@@ -2501,6 +2504,7 @@
   }
   function renderMine() {
     updateDock();
+    document.getElementById('mine-page-title').textContent = `${childName()}的小本本`;
     document.getElementById('mine-current').textContent = state.points;
     const days = weekKeys();
     const totals = days.map(d => ({ ...d, val: dayPoints(d.key) }));
