@@ -613,8 +613,7 @@
   }
 
   function displayPhaseTitle(phase, index) {
-    const separator = index === 2 ? '。' : '•';
-    return `${phaseLabel(index)}${separator}${stripPhasePrefix(phase.title) || DEFAULT_AFTER_SCHOOL_PLAN[index]?.title || '放學任務'}`;
+    return `${phaseLabel(index)} • ${stripPhasePrefix(phase.title) || DEFAULT_AFTER_SCHOOL_PLAN[index]?.title || '放學任務'}`;
   }
 
   function normalizeAfterSchoolPlan(plan = state.afterSchoolPlan) {
@@ -961,11 +960,13 @@
     if (!task) return;
     const wasDone = afterSchool.isAfterSchoolDone(log, id);
     const earned = parseInt(task.points, 10) || 0;
+    const prevStatus = afterSchool.getAfterSchoolStatus(afterSchoolPlan(), log);
     state.afterSchoolLog[today] = afterSchool.setAfterSchoolTaskDone(log, id, !wasDone);
     state.points = Math.max(0, state.points + (wasDone ? -earned : earned));
     save();
     refreshStreak();
     const nextStatus = afterSchool.getAfterSchoolStatus(afterSchoolPlan(), state.afterSchoolLog[today]);
+    const ticketJustUnlocked = !wasDone && !prevStatus.gameTicket.done && nextStatus.gameTicket.done;
 
     if (!wasDone && sourceEl) {
       markAfterSchoolTaskDoneNow(sourceEl, nextStatus);
@@ -979,12 +980,22 @@
           renderUnlock(null, { mode: 'after-school' });
           setTimeout(() => afterSchoolClearSfx(), 120);
         }, 850 + n * 90 + 120);
+      } else if (ticketJustUnlocked) {
+        setTimeout(() => {
+          showScreen('screen-unlock');
+          renderUnlock(null, { mode: 'after-school-ticket' });
+          setTimeout(() => afterSchoolClearSfx(), 120);
+        }, 850 + n * 90 + 120);
       } else {
         setTimeout(renderAfterSchool, 850 + n * 90 + 120);
       }
     } else if (!wasDone && nextStatus.nextTask === null) {
       showScreen('screen-unlock');
       renderUnlock(null, { mode: 'after-school' });
+      setTimeout(() => afterSchoolClearSfx(), 120);
+    } else if (ticketJustUnlocked) {
+      showScreen('screen-unlock');
+      renderUnlock(null, { mode: 'after-school-ticket' });
       setTimeout(() => afterSchoolClearSfx(), 120);
     } else {
       renderAfterSchool();
@@ -1329,7 +1340,7 @@
     const sub2El = document.getElementById('unlock-sub2');
     const ctaEl = document.getElementById('unlock-cta');
     const mode = options.mode || 'reward';
-    unlockReturnTarget = mode === 'after-school' ? 'after-school' : 'rewards';
+    unlockReturnTarget = mode.startsWith('after-school') ? 'after-school' : 'rewards';
 
     if (mode === 'after-school') {
       card.hidden = false;
@@ -1341,6 +1352,18 @@
       if (sub2El) sub2El.textContent = '把故事燈打開吧';
       document.getElementById('unlock-card-name').textContent = '睡前故事';
       document.getElementById('unlock-card-sub').textContent = '9:00 前完成放學路線';
+      if (ctaEl) ctaEl.textContent = '✓ 回放學路線';
+    } else if (mode === 'after-school-ticket') {
+      const ticketName = afterSchoolTicketTitle();
+      card.hidden = false;
+      const icBox = card.querySelector('.reward-icon-box');
+      icBox.innerHTML = iconSvg('ic-gamepad', 32, '#FEFBF9');
+      if (titleEl) titleEl.textContent = '恭喜過關！';
+      if (nameTop) nameTop.textContent = '獲得門票';
+      if (subEl) subEl.textContent = '第二段任務完成了';
+      if (sub2El) sub2El.textContent = '先收好身體，再開心使用';
+      document.getElementById('unlock-card-name').textContent = ticketName;
+      document.getElementById('unlock-card-sub').textContent = '中文故事、練琴都完成';
       if (ctaEl) ctaEl.textContent = '✓ 回放學路線';
     } else if (reward) {
       card.hidden = false;

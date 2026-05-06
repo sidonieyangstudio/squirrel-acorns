@@ -1006,7 +1006,7 @@ body.on-unlock #dock { display: none; }
 #screen-unlock {
   background: linear-gradient(180deg, var(--light-pink) 0%, var(--pink-bg) 100%);
   text-align: center;
-  padding: calc(env(safe-area-inset-top) + 70px) 24px calc(env(safe-area-inset-bottom) + 60px);
+  padding: calc(env(safe-area-inset-top) + 42px) 24px calc(env(safe-area-inset-bottom) + 34px);
   overflow: hidden;
   flex-direction: column;
   align-items: stretch;
@@ -1014,7 +1014,7 @@ body.on-unlock #dock { display: none; }
 }
 #screen-unlock:not([hidden]) { display: flex; }
 .unlock-top { position: relative; z-index: 10; flex-shrink: 0; text-align: center; }
-.unlock-mid { position: relative; z-index: 10; flex: 1; display: flex; align-items: center; justify-content: center; }
+.unlock-mid { position: relative; z-index: 10; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; margin: 18px 0; }
 .unlock-bottom { position: relative; z-index: 10; flex-shrink: 0; }
 .unlock-kicker {
   font-size: 12px; font-weight: 600; letter-spacing: 0.22em;
@@ -1042,14 +1042,14 @@ body.on-unlock #dock { display: none; }
 }
 .unlock-squirrel-circle {
   margin: 0 auto;
-  width: 240px; height: 240px; border-radius: 50%;
+  width: 210px; height: 210px; border-radius: 50%;
   background: var(--white); border: 1px solid var(--hairline);
   box-shadow: var(--shadow-warm-lg);
   display: grid; place-items: center;
   position: relative; z-index: 10;
   animation: bounce-soft 2.4s ease-in-out infinite;
 }
-.unlock-squirrel-circle img { width: 200px; height: 200px; }
+.unlock-squirrel-circle img { width: 174px; height: 174px; }
 @keyframes bounce-soft {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-10px); }
@@ -1087,6 +1087,22 @@ body.on-unlock #dock { display: none; }
   box-shadow: var(--shadow-warm-lg);
   position: relative; z-index: 10;
   letter-spacing: 0.04em; font-weight: 600;
+}
+
+@media (max-height: 760px) {
+  #screen-unlock {
+    padding-top: calc(env(safe-area-inset-top) + 28px);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 22px);
+  }
+  .unlock-kicker { margin-bottom: 6px; }
+  .unlock-title { font-size: 30px; }
+  .unlock-reward-name { font-size: 25px; margin-top: 4px; }
+  .unlock-sub { margin-top: 10px; font-size: 14px; line-height: 1.4; }
+  .unlock-mid { margin: 12px 0; }
+  .unlock-squirrel-circle { width: 176px; height: 176px; }
+  .unlock-squirrel-circle img { width: 146px; height: 146px; }
+  .unlock-reward-card { padding: 12px 14px; margin-bottom: 10px; }
+  #unlock-cta { height: 50px; }
 }
 
 /* 背景裝飾 icon (星星 / 愛心 / 橡實) 持續放大縮小 */
