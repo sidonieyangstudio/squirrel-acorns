@@ -93,6 +93,10 @@ a { color: inherit; }
   position: relative;
 }
 .screen[hidden] { display: none !important; }
+body.on-unlock {
+  overflow: hidden;
+  touch-action: none;
+}
 body.on-unlock #dock { display: none; }
 
 /* ---------- common ---------- */
@@ -1004,10 +1008,17 @@ body.on-unlock #dock { display: none; }
 
 /* ---------- screen 3: unlock ---------- */
 #screen-unlock {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: min(100%, 480px);
+  margin: 0 auto;
   background: linear-gradient(180deg, var(--light-pink) 0%, var(--pink-bg) 100%);
   text-align: center;
   padding: calc(env(safe-area-inset-top) + 42px) 24px calc(env(safe-area-inset-bottom) + 34px);
   overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: none;
   flex-direction: column;
   align-items: stretch;
   justify-content: space-between;

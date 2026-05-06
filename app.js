@@ -2596,6 +2596,9 @@
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
   document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
+  const unlockScreen = document.getElementById('screen-unlock');
+  unlockScreen.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+  unlockScreen.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
   document.getElementById('unlock-cta').onclick = () => {
     stopFestivities();
     if (unlockReturnTarget === 'after-school') {
