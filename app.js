@@ -302,6 +302,18 @@
     }
   }
 
+  const dayRolloverTracker = window.SquirrelDailyReset
+    ? window.SquirrelDailyReset.createDayRolloverTracker(todayKey, () => {
+        dailyReset();
+        refreshStreak();
+        refreshCurrentScreen();
+      })
+    : { check() { return false; } };
+
+  function checkDayRollover() {
+    dayRolloverTracker.check();
+  }
+
   /* ---------- streak (簡易：今天有勾任何一個就 +1，跨日斷掉) ---------- */
   function refreshStreak() {
     const today = todayKey();
@@ -2883,6 +2895,12 @@
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
   document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
+  window.addEventListener('focus', checkDayRollover);
+  window.addEventListener('pageshow', checkDayRollover);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkDayRollover();
+  });
+  setInterval(checkDayRollover, 60 * 1000);
   const unlockScreen = document.getElementById('screen-unlock');
   unlockScreen.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
   unlockScreen.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
