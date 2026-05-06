@@ -19,12 +19,54 @@
     'ic-salad','ic-piano','ic-queen','ic-cherry','ic-caravan',
     'ic-bookopen','ic-booka','ic-apple','ic-backpack','ic-dumbbell','ic-palette','ic-tent'
   ];
+  const DEFAULT_AFTER_SCHOOL_PLAN = [
+    {
+      id: 'decompress',
+      title: '回家卸載壓力',
+      time: '3:00–3:30',
+      reminderTime: '',
+      tasks: [
+        { id: 'snack-clothes', title: '吃點心、換衣服', note: '先讓身體回到家', icon: 'ic-salad', points: 1 }
+      ]
+    },
+    {
+      id: 'ticket',
+      title: '遊戲機門票',
+      time: '3:30–6:45',
+      reminderTime: '18:15',
+      tasks: [
+        { id: 'chinese-story', title: '中文故事 15 分鐘', note: '門票條件 1/2', icon: 'ic-bookopen', points: 5, ticket: true },
+        { id: 'piano', title: '練琴 10 分鐘', note: '完成後開門票', icon: 'ic-piano', points: 5, ticket: true }
+      ]
+    },
+    {
+      id: 'evening',
+      title: '晚上整理',
+      time: '晚餐後–8:30',
+      reminderTime: '20:15',
+      tasks: [
+        { id: 'lunchbox', title: '準備明天便當', note: '晚餐後出現', icon: 'ic-backpack', points: 2 },
+        { id: 'shower', title: '洗澡、換睡衣', note: '把身體切到睡覺模式', icon: 'ic-sparkles', points: 2 },
+        { id: 'brush-bed', title: '刷牙、上床', note: '9:00 前開睡前故事', icon: 'ic-star', points: 3, storyGate: true }
+      ]
+    }
+  ];
+  const DEFAULT_AFTER_SCHOOL_SETTINGS = {
+    pageTitle: '遊戲機門票＋睡前故事',
+    pageSubtitle: '先拿遊戲機門票，再把晚上整理好'
+  };
+  const OLD_AFTER_SCHOOL_DEFAULTS = {
+    pageTitle: '遊戲機門票',
+    pageSubtitle: '先拿遊戲機門票，再把晚上收好',
+    phaseTitles: {
+      decompress: '回家卸載',
+      evening: '晚上收好'
+    }
+  };
 
   const DEFAULT_STATE = {
     userName: '小寶',
     habits: [
-      { id: h(), title: '寫一篇中文故事',     icon: 'ic-booka',    points: 3 },
-      { id: h(), title: '練琴 20 分鐘',       icon: 'ic-piano',    points: 3 },
       { id: h(), title: '閱讀中文繪本',       icon: 'ic-bookopen', points: 3 },
       { id: h(), title: '運動－波比跳 10 下', icon: 'ic-dumbbell', points: 3 },
       { id: h(), title: '洗衣服＋烘衣服',     icon: 'ic-toolcase', points: 3 },
@@ -51,6 +93,10 @@
     redeemed: [],                    // [{ id, rewardId, title, icon, cost, date }]
     bingoBonuses: {},                // { '2026-05-01': { bonus, lines, at } }
     timedRuns: {},                   // { '2026-05-01': { habitId: { startedAt, expiresAt } } }
+    afterSchoolLog: {},              // { '2026-05-01': { taskId: { done, at } } }
+    afterSchoolReminderLog: {},      // { '2026-05-01': { phaseId: true } }
+    afterSchoolSettings: structuredClone(DEFAULT_AFTER_SCHOOL_SETTINGS),
+    afterSchoolPlan: structuredClone(DEFAULT_AFTER_SCHOOL_PLAN),
     parentPin: '',                   // 家長密碼 4 位數字（空 = 未設定）
     parentSecretQ: '',               // 秘密題目（提示用）
     parentSecretA: ''                // 答案，比對時統一 toLowerCase + trim
@@ -59,6 +105,26 @@
   function h() { return Math.random().toString(36).slice(2, 9); }
 
   let state = load();
+  if (removeLegacyDefaultHabits(state)) save();
+
+  function removeLegacyDefaultHabits(nextState) {
+    const removed = new Set();
+    nextState.habits = (nextState.habits || []).filter(habit => {
+      const title = String(habit.title || '').trim();
+      const compactTitle = title.replace(/\s+/g, '');
+      const legacy = title === '寫一篇中文故事' || compactTitle === '練琴20分鐘';
+      if (legacy) removed.add(habit.id);
+      return !legacy;
+    });
+    if (!removed.size) return false;
+    Object.values(nextState.log || {}).forEach(log => {
+      removed.forEach(id => delete log[id]);
+    });
+    Object.values(nextState.timedRuns || {}).forEach(runs => {
+      removed.forEach(id => delete runs[id]);
+    });
+    return true;
+  }
 
   function load() {
     // v2 already exists → use it
@@ -156,7 +222,9 @@
   function refreshStreak() {
     const today = todayKey();
     const todayLog = state.log[today] || {};
-    const anyToday = Object.values(todayLog).some(isLogDone);
+    const afterSchoolLog = (state.afterSchoolLog || {})[today] || {};
+    const anyAfterSchool = Object.values(afterSchoolLog).some(v => v && v.done);
+    const anyToday = Object.values(todayLog).some(isLogDone) || anyAfterSchool;
     if (anyToday) {
       if (state.lastActiveDate === today) return;
       const y = new Date(); y.setDate(y.getDate()-1);
@@ -184,9 +252,13 @@
   }
 
   /* ---------- screen routing ---------- */
-  const screens = ['screen-today', 'screen-rewards', 'screen-unlock', 'screen-mine', 'screen-bingo'];
+  const screens = ['screen-today', 'screen-rewards', 'screen-unlock', 'screen-mine', 'screen-bingo', 'screen-after-school'];
   function showScreen(id) {
     if (id !== 'screen-bingo') stopBingoSpin();
+    if (id !== 'screen-after-school' && afterSchoolClockTimer) {
+      clearInterval(afterSchoolClockTimer);
+      afterSchoolClockTimer = null;
+    }
     screens.forEach(s => document.getElementById(s).hidden = (s !== id));
     document.body.classList.toggle('on-unlock', id === 'screen-unlock');
     updateDockButtons(id);
@@ -199,6 +271,7 @@
 
   function goToScreen(target) {
     if (target === 'today')        { showScreen('screen-today');   renderToday(); }
+    else if (target === 'after-school') { showScreen('screen-after-school'); renderAfterSchool(); }
     else if (target === 'mine')    { showScreen('screen-mine');    renderMine(); }
     else if (target === 'rewards') { showScreen('screen-rewards'); renderRewards(); }
     else if (target === 'bingo')    { showScreen('screen-bingo');   renderBingo(); }
@@ -206,11 +279,12 @@
   function updateDockButtons(currentId) {
     const map = {
       'screen-today':   'btn-go-today',
+      'screen-after-school': 'btn-go-after-school',
       'screen-mine':    'btn-go-mine',
       'screen-rewards': 'btn-go-rewards-2',
       'screen-bingo':   'btn-go-today'
     };
-    ['btn-go-today','btn-go-mine','btn-go-rewards-2'].forEach(id => {
+    ['btn-go-today','btn-go-after-school','btn-go-mine','btn-go-rewards-2'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.classList.toggle('btn-primary', map[currentId] === id);
@@ -219,9 +293,11 @@
   function updateDock() {
     const cur = todayPoints();
     const max = maxPointsToday() || 1;
+    const labelEl = document.getElementById('dock-label-text');
     const curEl = document.getElementById('dock-current');
     const tgtEl = document.getElementById('dock-target');
     const barEl = document.getElementById('dock-bar');
+    if (labelEl) labelEl.textContent = '我的橡實';
     if (curEl) curEl.textContent = cur;
     if (tgtEl) tgtEl.textContent = maxPointsToday();
     if (barEl) barEl.style.width = Math.min(100, Math.round(cur/max*100)) + '%';
@@ -430,6 +506,30 @@
     setTimeout(coinShower, 200);
     setTimeout(bellRing, 800);
   }
+  function afterSchoolClearSfx() {
+    // 放學破關專屬：短一點、亮一點，像故事門打開
+    try {
+      const ctx = ensureAudio();
+      const now = ctx.currentTime;
+      [659.25, 783.99, 987.77, 1318.51, 1567.98].forEach((freq, i) => {
+        const t0 = now + i * 0.09;
+        const osc = ctx.createOscillator();
+        osc.type = i < 3 ? 'triangle' : 'sine';
+        osc.frequency.value = freq;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.15, t0 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.45);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.5);
+      });
+      setTimeout(() => {
+        jsfxrPlay(SFX_CONFETTI, 1.35, 0.8);
+        setTimeout(() => jsfxrPlay(SFX_REWARD, 1.55, 0.7), 140);
+      }, 420);
+    } catch (e) {}
+  }
 
   /* ---------- 飛橡實動畫 + 數字跳動 ---------- */
   function flyOneAcorn(fromRect, toRect, jitter = 0) {
@@ -479,14 +579,168 @@
   }
 
   /* ---------- points helpers ---------- */
+  const afterSchool = window.SquirrelAfterSchool;
+
+  function normalizeClock(value, fallback = '') {
+    const text = String(value || '').trim();
+    return /^\d{2}:\d{2}$/.test(text) ? text : fallback;
+  }
+
+  function afterSchoolSettings() {
+    state.afterSchoolSettings = {
+      ...DEFAULT_AFTER_SCHOOL_SETTINGS,
+      ...(state.afterSchoolSettings || {})
+    };
+    if (state.afterSchoolSettings.pageTitle === OLD_AFTER_SCHOOL_DEFAULTS.pageTitle) {
+      state.afterSchoolSettings.pageTitle = DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle;
+    }
+    if (state.afterSchoolSettings.pageSubtitle === OLD_AFTER_SCHOOL_DEFAULTS.pageSubtitle) {
+      state.afterSchoolSettings.pageSubtitle = DEFAULT_AFTER_SCHOOL_SETTINGS.pageSubtitle;
+    }
+    state.afterSchoolSettings.pageTitle = String(state.afterSchoolSettings.pageTitle || DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle).trim();
+    state.afterSchoolSettings.pageSubtitle = String(
+      state.afterSchoolSettings.pageSubtitle || `先拿${state.afterSchoolSettings.ticketTitle || '遊戲機門票'}，再把晚上收好`
+    ).trim();
+    return state.afterSchoolSettings;
+  }
+
+  function stripPhasePrefix(title) {
+    return String(title || '').replace(/^第[一二三四五六七八九十]+段\s*[·．.]\s*/, '').trim();
+  }
+
+  function phaseLabel(index) {
+    return ['第一段', '第二段', '第三段'][index] || `第${index + 1}段`;
+  }
+
+  function displayPhaseTitle(phase, index) {
+    const separator = index === 2 ? '。' : '•';
+    return `${phaseLabel(index)}${separator}${stripPhasePrefix(phase.title) || DEFAULT_AFTER_SCHOOL_PLAN[index]?.title || '放學任務'}`;
+  }
+
+  function normalizeAfterSchoolPlan(plan = state.afterSchoolPlan) {
+    const legacyTicketTitle = state.afterSchoolSettings && state.afterSchoolSettings.ticketTitle;
+    const legacyReminderTime = state.afterSchoolSettings && state.afterSchoolSettings.reminderTime;
+    const source = Array.isArray(plan) ? plan : [];
+    const normalized = DEFAULT_AFTER_SCHOOL_PLAN.map((defPhase, phaseIndex) => {
+      const raw = source.find(phase => phase && phase.id === defPhase.id) || source[phaseIndex] || defPhase;
+      const rawTasks = Array.isArray(raw.tasks) ? raw.tasks : defPhase.tasks;
+      let tasks = rawTasks.map(task => ({
+        id: task.id || h(),
+        title: String(task.title || '未命名任務').trim(),
+        note: String(task.note || '').trim(),
+        icon: ICON_LIST.includes(task.icon) ? task.icon : defPhase.tasks[0]?.icon || 'ic-star',
+        points: Math.max(1, parseInt(task.points, 10) || 1)
+      }));
+      tasks = tasks.map((task, taskIndex) => ({
+        ...task,
+        ticket: defPhase.id === 'ticket',
+        storyGate: defPhase.id === 'evening' && taskIndex === tasks.length - 1
+      }));
+      let reminderTime = normalizeClock(raw.reminderTime, defPhase.reminderTime || '');
+      if (defPhase.id === 'ticket' && !raw.reminderTime && legacyReminderTime) {
+        reminderTime = normalizeClock(legacyReminderTime, defPhase.reminderTime || '');
+      }
+      const rawTitle = stripPhasePrefix(raw.title);
+      const upgradedTitle = rawTitle === OLD_AFTER_SCHOOL_DEFAULTS.phaseTitles[defPhase.id]
+        ? defPhase.title
+        : rawTitle;
+      return {
+        id: defPhase.id,
+        title: upgradedTitle || (defPhase.id === 'ticket' && legacyTicketTitle ? legacyTicketTitle : defPhase.title),
+        time: String(raw.time || defPhase.time || '').trim(),
+        reminderTime,
+        tasks
+      };
+    });
+    state.afterSchoolPlan = normalized;
+    return normalized;
+  }
+
+  function afterSchoolPlan() {
+    if (!afterSchool) return [];
+    return normalizeAfterSchoolPlan();
+  }
+
+  function afterSchoolTicketTitle(plan = afterSchoolPlan()) {
+    const ticketPhase = plan.find(phase => phase.id === 'ticket');
+    return stripPhasePrefix(ticketPhase && ticketPhase.title) || '遊戲機門票';
+  }
+
+  function clockMinutes(value) {
+    const time = normalizeClock(value, '');
+    if (!time) return null;
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function formatClockShort(value) {
+    const time = normalizeClock(value, '');
+    if (!time) return '';
+    const [h, m] = time.split(':').map(Number);
+    const hour = h > 12 ? h - 12 : h;
+    return `${hour}:${String(m).padStart(2, '0')}`;
+  }
+
+  function isAfterSchoolReminderDue(reminderTime, now = new Date()) {
+    const target = clockMinutes(reminderTime);
+    if (target === null) return false;
+    return now.getHours() * 60 + now.getMinutes() >= target;
+  }
+
+  function isAfterSchoolPhaseDone(phase, log) {
+    return !!(phase && phase.tasks && phase.tasks.length) && phase.tasks.every(task => afterSchool.isAfterSchoolDone(log, task.id));
+  }
+
+  function maybeFireAfterSchoolReminders(plan, log) {
+    const today = todayKey();
+    state.afterSchoolReminderLog = state.afterSchoolReminderLog || {};
+    const daily = (state.afterSchoolReminderLog[today] && typeof state.afterSchoolReminderLog[today] === 'object')
+      ? state.afterSchoolReminderLog[today]
+      : {};
+    let fired = false;
+    plan.filter(phase => phase.id === 'ticket' || phase.id === 'evening').forEach(phase => {
+      if (!phase.reminderTime || daily[phase.id] || isAfterSchoolPhaseDone(phase, log) || !isAfterSchoolReminderDue(phase.reminderTime)) return;
+      daily[phase.id] = true;
+      fired = true;
+      ding(3);
+      toast(`${stripPhasePrefix(phase.title)}提醒時間到了`);
+    });
+    if (fired) {
+      state.afterSchoolReminderLog[today] = daily;
+      save();
+    }
+  }
+
+  function afterSchoolTodayLog() {
+    const today = todayKey();
+    state.afterSchoolLog = state.afterSchoolLog || {};
+    state.afterSchoolLog[today] = state.afterSchoolLog[today] || {};
+    return state.afterSchoolLog[today];
+  }
+
+  function afterSchoolStatusFor(dateKey = todayKey()) {
+    const log = ((state.afterSchoolLog || {})[dateKey]) || {};
+    if (!afterSchool) {
+      return { earnedPoints: 0, totalCount: 0, doneCount: 0, tasks: [], gameTicket: { done: false, doneCount: 0, totalCount: 0 } };
+    }
+    return afterSchool.getAfterSchoolStatus(afterSchoolPlan(), log);
+  }
+
+  function afterSchoolTaskById(id) {
+    if (!afterSchool) return null;
+    return afterSchool.flattenTasks(afterSchoolPlan()).find(task => task.id === id) || null;
+  }
+
   function todayPoints() {
     const log = state.log[todayKey()] || {};
     const habitPoints = state.habits.reduce((sum, hab) => sum + logEarnedPoints(hab, log[hab.id]), 0);
     const bonus = ((state.bingoBonuses || {})[todayKey()] || {}).bonus || 0;
-    return habitPoints + bonus;
+    const afterSchoolPoints = afterSchoolStatusFor(todayKey()).earnedPoints || 0;
+    return habitPoints + bonus + afterSchoolPoints;
   }
   function maxPointsToday() {
-    return visibleHabitsToday().reduce((s, h) => s + habitFullPoints(h), 0);
+    const afterSchoolMax = afterSchoolStatusFor(todayKey()).tasks.reduce((sum, task) => sum + (parseInt(task.points, 10) || 0), 0);
+    return visibleHabitsToday().reduce((s, h) => s + habitFullPoints(h), 0) + afterSchoolMax;
   }
 
   /* ---------- render: today ---------- */
@@ -567,6 +821,174 @@
     document.getElementById('today-date').textContent =
       `${d.getMonth()+1}月${d.getDate()}日 · 星期${week}`;
     scheduleTodayCountdown();
+  }
+
+  /* ---------- render: after school ---------- */
+  let afterSchoolClockTimer = null;
+  function formatClock(now = new Date()) {
+    return `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function scheduleAfterSchoolClock() {
+    if (afterSchoolClockTimer) { clearInterval(afterSchoolClockTimer); afterSchoolClockTimer = null; }
+    const screen = document.getElementById('screen-after-school');
+    if (screen && !screen.hidden) afterSchoolClockTimer = setInterval(renderAfterSchool, 30000);
+  }
+
+  function renderAfterSchool() {
+    if (!afterSchool) return;
+    const today = todayKey();
+    const log = afterSchoolTodayLog();
+    const cfg = afterSchoolSettings();
+    const plan = afterSchoolPlan();
+    const ticketName = afterSchoolTicketTitle(plan);
+    const status = afterSchool.getAfterSchoolStatus(plan, log);
+    const list = document.getElementById('after-school-list');
+    const nextBtn = document.getElementById('btn-after-school-next');
+    const ticketGate = document.getElementById('after-school-ticket-gate');
+    const ticketSub = document.getElementById('after-school-ticket-sub');
+    const ticketTitle = document.getElementById('after-school-ticket-title');
+    const ticketReminder = document.getElementById('after-school-ticket-reminder');
+
+    document.getElementById('after-school-now').textContent = `現在 ${formatClock()}`;
+    document.getElementById('after-school-title').textContent = cfg.pageTitle;
+    document.getElementById('after-school-sub').textContent = cfg.pageSubtitle;
+    ticketTitle.textContent = ticketName;
+    ticketSub.textContent = status.gameTicket.done
+      ? `${ticketName}條件都完成了`
+      : `已完成 ${status.gameTicket.doneCount}/${status.gameTicket.totalCount}`;
+    const reminderPhases = plan.filter(phase => (phase.id === 'ticket' || phase.id === 'evening') && phase.reminderTime);
+    ticketReminder.innerHTML = reminderPhases.map(phase => {
+      const done = isAfterSchoolPhaseDone(phase, log);
+      const due = !done && isAfterSchoolReminderDue(phase.reminderTime);
+      const text = `${stripPhasePrefix(phase.title)} ${formatClockShort(phase.reminderTime)} ${done ? '已完成' : (due ? '提醒時間到了' : '提醒')}`;
+      return `<span class="ticket-reminder-pill${due ? ' alert' : ''}">${escHtml(text)}</span>`;
+    }).join('');
+    ticketGate.textContent = status.gameTicket.done ? '獲得門票' : '準備中';
+    ticketGate.classList.toggle('open', status.gameTicket.done);
+
+    list.innerHTML = plan.map(phase => {
+      const rows = phase.tasks.map(task => {
+        const done = afterSchool.isAfterSchoolDone(log, task.id);
+        const isNext = status.nextTask && status.nextTask.id === task.id;
+        const tag = done ? '已完成' : (isNext ? '下一關' : task.note);
+        const tagClass = done ? ' good' : (task.storyGate ? ' warn' : '');
+        return `
+          <div class="after-school-task${done ? ' done' : ''}${isNext ? ' current' : ''}">
+            <div class="after-school-task-icon">${iconSvg(task.icon, 25, '#5E5453')}</div>
+            <div class="after-school-task-text">
+              <div class="after-school-task-title">${escHtml(task.title)}</div>
+              <div class="after-school-task-sub">
+                ${acornSvg(14)}
+                +${task.points} 顆橡實
+                <span class="after-school-tag${tagClass}">${escHtml(tag)}</span>
+              </div>
+              ${isNext && !done ? `<button class="after-school-inline-next" data-after-school-toggle="${task.id}">完成這一關</button>` : ''}
+            </div>
+            <button class="check ${done ? 'done' : ''}" data-after-school-toggle="${task.id}" aria-label="切換${escAttr(task.title)}">
+              ${done ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>' : ''}
+            </button>
+          </div>
+        `;
+      }).join('');
+      return `
+        <section class="after-school-phase">
+          <div class="after-school-phase-head">
+            <div class="after-school-phase-title">${escHtml(displayPhaseTitle(phase, plan.indexOf(phase)))}</div>
+            <div class="after-school-phase-time">
+              <span>${escHtml(phase.time)}</span>
+              ${phase.reminderTime ? `<span class="phase-reminder">${escHtml(formatClockShort(phase.reminderTime))} 提醒</span>` : ''}
+            </div>
+          </div>
+          ${rows}
+        </section>
+      `;
+    }).join('');
+
+    nextBtn.hidden = true;
+    nextBtn.dataset.afterSchoolNext = '';
+
+    const curEl = document.getElementById('dock-current');
+    const tgtEl = document.getElementById('dock-target');
+    const barEl = document.getElementById('dock-bar');
+    const labelEl = document.getElementById('dock-label-text');
+    if (labelEl) labelEl.textContent = '今晚目標';
+    if (curEl) curEl.textContent = status.doneCount;
+    if (tgtEl) tgtEl.textContent = status.totalCount;
+    if (barEl) barEl.style.width = status.totalCount ? Math.round(status.doneCount / status.totalCount * 100) + '%' : '0%';
+    maybeFireAfterSchoolReminders(plan, log);
+    scheduleAfterSchoolClock();
+  }
+
+  function markAfterSchoolTaskDoneNow(sourceEl, status) {
+    const row = sourceEl ? sourceEl.closest('.after-school-task') : null;
+    if (!row) return;
+    row.classList.add('done');
+    row.classList.remove('current');
+    const checkBtn = row.querySelector('[data-after-school-toggle].check');
+    if (checkBtn) {
+      checkBtn.classList.add('done');
+      checkBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>';
+    }
+    const tag = row.querySelector('.after-school-tag');
+    if (tag) {
+      tag.textContent = '已完成';
+      tag.classList.add('good');
+      tag.classList.remove('warn');
+    }
+    const inlineBtn = row.querySelector('.after-school-inline-next');
+    if (inlineBtn) inlineBtn.hidden = true;
+
+    const curEl = document.getElementById('dock-current');
+    const barEl = document.getElementById('dock-bar');
+    if (curEl) {
+      const from = Math.max(0, status.doneCount - 1);
+      tweenNumber(curEl, from, status.doneCount, 360);
+      curEl.classList.remove('bump');
+      void curEl.offsetWidth;
+      curEl.classList.add('bump');
+    }
+    if (barEl) {
+      barEl.style.width = status.totalCount ? Math.round(status.doneCount / status.totalCount * 100) + '%' : '0%';
+    }
+  }
+
+  function toggleAfterSchoolTask(id, sourceEl) {
+    if (!afterSchool) return;
+    const today = todayKey();
+    const log = afterSchoolTodayLog();
+    const task = afterSchoolTaskById(id);
+    if (!task) return;
+    const wasDone = afterSchool.isAfterSchoolDone(log, id);
+    const earned = parseInt(task.points, 10) || 0;
+    state.afterSchoolLog[today] = afterSchool.setAfterSchoolTaskDone(log, id, !wasDone);
+    state.points = Math.max(0, state.points + (wasDone ? -earned : earned));
+    save();
+    refreshStreak();
+    const nextStatus = afterSchool.getAfterSchoolStatus(afterSchoolPlan(), state.afterSchoolLog[today]);
+
+    if (!wasDone && sourceEl) {
+      markAfterSchoolTaskDoneNow(sourceEl, nextStatus);
+      const n = Math.max(1, Math.min(earned, 8));
+      ding(n);
+      const dockEl = document.querySelector('.dock-label svg');
+      flyAcorn(sourceEl, dockEl, n);
+      if (nextStatus.nextTask === null) {
+        setTimeout(() => {
+          showScreen('screen-unlock');
+          renderUnlock(null, { mode: 'after-school' });
+          setTimeout(() => afterSchoolClearSfx(), 120);
+        }, 850 + n * 90 + 120);
+      } else {
+        setTimeout(renderAfterSchool, 850 + n * 90 + 120);
+      }
+    } else if (!wasDone && nextStatus.nextTask === null) {
+      showScreen('screen-unlock');
+      renderUnlock(null, { mode: 'after-school' });
+      setTimeout(() => afterSchoolClearSfx(), 120);
+    } else {
+      renderAfterSchool();
+    }
   }
 
   /* ---------- render: bingo ---------- */
@@ -898,21 +1320,46 @@
   }
 
   /* ---------- render: unlock screen ---------- */
-  function renderUnlock(reward) {
+  let unlockReturnTarget = 'rewards';
+  function renderUnlock(reward, options = {}) {
     const card = document.getElementById('unlock-card');
     const nameTop = document.getElementById('unlock-reward-name');
-    if (reward) {
+    const titleEl = document.getElementById('unlock-title');
+    const subEl = document.getElementById('unlock-sub');
+    const sub2El = document.getElementById('unlock-sub2');
+    const ctaEl = document.getElementById('unlock-cta');
+    const mode = options.mode || 'reward';
+    unlockReturnTarget = mode === 'after-school' ? 'after-school' : 'rewards';
+
+    if (mode === 'after-school') {
+      card.hidden = false;
+      const icBox = card.querySelector('.reward-icon-box');
+      icBox.innerHTML = iconSvg('ic-bookopen', 32, '#FEFBF9');
+      if (titleEl) titleEl.textContent = '恭喜破關！';
+      if (nameTop) nameTop.textContent = '得到睡前故事';
+      if (subEl) subEl.textContent = '今晚的路線完成了';
+      if (sub2El) sub2El.textContent = '把故事燈打開吧';
+      document.getElementById('unlock-card-name').textContent = '睡前故事';
+      document.getElementById('unlock-card-sub').textContent = '9:00 前完成放學路線';
+      if (ctaEl) ctaEl.textContent = '✓ 回放學路線';
+    } else if (reward) {
       card.hidden = false;
       const icBox = card.querySelector('.reward-icon-box');
       icBox.innerHTML = iconSvg(reward.icon, 32, '#FEFBF9');
+      if (titleEl) titleEl.textContent = '恭喜你獲得';
       document.getElementById('unlock-card-name').textContent = reward.title;
       document.getElementById('unlock-card-sub').textContent = `已扣抵 ${reward.cost} 顆橡實`;
-      document.getElementById('unlock-points').textContent = reward.cost;
       if (nameTop) nameTop.textContent = reward.title;
+      if (subEl) subEl.innerHTML = `你收集了 ${acornSvg(20)} <b id="unlock-points">${reward.cost}</b> 顆橡實`;
+      if (sub2El) sub2El.textContent = '松鼠也好開心呀！';
+      if (ctaEl) ctaEl.textContent = '✓ 太棒了！';
     } else {
       card.hidden = true;
-      document.getElementById('unlock-points').textContent = state.points;
+      if (titleEl) titleEl.textContent = '恭喜你獲得';
       if (nameTop) nameTop.textContent = '';
+      if (subEl) subEl.innerHTML = `你收集了 ${acornSvg(20)} <b id="unlock-points">${state.points}</b> 顆橡實`;
+      if (sub2El) sub2El.textContent = '松鼠也好開心呀！';
+      if (ctaEl) ctaEl.textContent = '✓ 太棒了！';
     }
     spawnBgIcons();
     spawnConfetti();
@@ -1126,6 +1573,173 @@
     bd.hidden = false;
   }
   function closeModal() { document.getElementById('modal-backdrop').hidden = true; }
+
+  function openAfterSchoolSettingsForm() {
+    const cfg = afterSchoolSettings();
+    const plan = afterSchoolPlan();
+    openModal(`
+      <h3 class="modal-title">放學設定</h3>
+      <p class="modal-sub">主畫面、三段路線、提醒時間和任務都可以在這裡改。</p>
+      <form id="after-school-settings-form">
+        <div class="field">
+          <label>頁面主標題</label>
+          <input name="pageTitle" maxlength="24" value="${escAttr(cfg.pageTitle)}" placeholder="例：遊戲機門票" />
+        </div>
+        <div class="field">
+          <label>主標題下方文字</label>
+          <input name="pageSubtitle" maxlength="40" value="${escAttr(cfg.pageSubtitle)}" placeholder="例：先拿門票，再把晚上收好" />
+        </div>
+        <div class="after-school-editor">
+          ${plan.map((phase, index) => `
+            <section class="after-school-editor-phase">
+              <div class="after-school-editor-head">
+                <div>
+                  <div class="after-school-editor-kicker">${phaseLabel(index)}</div>
+                  <div class="after-school-editor-title">${escHtml(stripPhasePrefix(phase.title))}</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-ghost" data-new-after-school-task="${phase.id}">新增任務</button>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label>${phaseLabel(index)}標題</label>
+                  <input name="phaseTitle_${phase.id}" maxlength="18" value="${escAttr(stripPhasePrefix(phase.title))}" />
+                </div>
+                <div class="field">
+                  <label>時間文字</label>
+                  <input name="phaseTime_${phase.id}" maxlength="18" value="${escAttr(phase.time)}" />
+                </div>
+              </div>
+              ${phase.id === 'ticket' || phase.id === 'evening' ? `
+                <div class="field">
+                  <label>${phaseLabel(index)}提醒時間</label>
+                  <input name="phaseReminder_${phase.id}" type="time" value="${escAttr(phase.reminderTime || '')}" />
+                </div>
+              ` : ''}
+              <div class="after-school-editor-task-list">
+                ${phase.tasks.map(task => `
+                  <button type="button" class="after-school-editor-task" data-edit-after-school-task="${task.id}">
+                    <span class="after-school-editor-task-icon">${iconSvg(task.icon, 20, '#5E5453')}</span>
+                    <span class="after-school-editor-task-text">
+                      <b>${escHtml(task.title)}</b>
+                      <small>+${task.points} 顆橡實${task.note ? ` · ${escHtml(task.note)}` : ''}</small>
+                    </span>
+                    <span class="after-school-editor-task-edit">編輯</span>
+                  </button>
+                `).join('')}
+              </div>
+            </section>
+          `).join('')}
+        </div>
+        <div class="modal-actions" style="margin-top:18px;">
+          <button type="button" class="btn" data-cancel>取消</button>
+          <button type="submit" class="btn btn-primary">儲存</button>
+        </div>
+      </form>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelectorAll('[data-new-after-school-task]').forEach(btn => {
+      btn.onclick = () => openAfterSchoolTaskForm(btn.dataset.newAfterSchoolTask);
+    });
+    root.querySelectorAll('[data-edit-after-school-task]').forEach(btn => {
+      btn.onclick = () => {
+        const task = afterSchoolTaskById(btn.dataset.editAfterSchoolTask);
+        if (task) openAfterSchoolTaskForm(task.phaseId, task);
+      };
+    });
+    root.querySelector('#after-school-settings-form').onsubmit = (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const nextPlan = afterSchoolPlan().map(phase => ({
+        ...phase,
+        title: f[`phaseTitle_${phase.id}`].value.trim() || stripPhasePrefix(phase.title),
+        time: f[`phaseTime_${phase.id}`].value.trim() || phase.time,
+        reminderTime: f[`phaseReminder_${phase.id}`]
+          ? normalizeClock(f[`phaseReminder_${phase.id}`].value, phase.reminderTime || '')
+          : ''
+      }));
+      state.afterSchoolSettings = {
+        pageTitle: f.pageTitle.value.trim() || DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle,
+        pageSubtitle: f.pageSubtitle.value.trim() || DEFAULT_AFTER_SCHOOL_SETTINGS.pageSubtitle
+      };
+      state.afterSchoolPlan = nextPlan;
+      state.afterSchoolReminderLog = {};
+      save();
+      closeModal();
+      renderAfterSchool();
+      toast('放學設定已更新');
+    };
+  }
+
+  function openAfterSchoolTaskForm(phaseId, task) {
+    const plan = afterSchoolPlan();
+    const phase = plan.find(item => item.id === phaseId);
+    if (!phase) return;
+    const isNew = !task;
+    if (isNew) task = { id: `as-${h()}`, title: '', note: '', icon: phase.tasks[0]?.icon || 'ic-star', points: 2 };
+    openModal(`
+      <h3 class="modal-title">${isNew ? '新增放學任務' : '編輯放學任務'}</h3>
+      <p class="modal-sub">${escHtml(displayPhaseTitle(phase, plan.indexOf(phase)))}</p>
+      <form id="after-school-task-form">
+        <div class="field">
+          <label>任務名稱</label>
+          <input name="title" required maxlength="24" placeholder="例：中文故事 15 分鐘" value="${escAttr(task.title)}" />
+        </div>
+        <div class="field">
+          <label>任務小提示</label>
+          <input name="note" maxlength="28" placeholder="例：完成後開門票" value="${escAttr(task.note || '')}" />
+        </div>
+        <div class="field">
+          <label>完成可得橡實</label>
+          <input name="points" type="number" min="1" max="20" value="${escAttr(task.points || 2)}" required />
+        </div>
+        ${iconPicker(task.icon)}
+        <div class="modal-actions" style="margin-top:18px;">
+          <button type="button" class="btn" data-cancel>取消</button>
+          ${!isNew ? '<button type="button" class="btn btn-icon btn-danger btn-trash" data-delete-after-school-task><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' : ''}
+          <button type="submit" class="btn btn-primary">儲存</button>
+        </div>
+      </form>
+    `);
+    const root = document.getElementById('modal');
+    bindIconPicker(root);
+    root.querySelector('[data-cancel]').onclick = openAfterSchoolSettingsForm;
+    const delBtn = root.querySelector('[data-delete-after-school-task]');
+    if (delBtn) delBtn.onclick = () => {
+      if (!confirm(`刪除「${task.title}」？`)) return;
+      state.afterSchoolPlan = afterSchoolPlan().map(item => {
+        if (item.id !== phaseId) return item;
+        return { ...item, tasks: item.tasks.filter(x => x.id !== task.id) };
+      });
+      Object.values(state.afterSchoolLog || {}).forEach(log => delete log[task.id]);
+      state.afterSchoolPlan = normalizeAfterSchoolPlan(state.afterSchoolPlan);
+      save();
+      renderAfterSchool();
+      openAfterSchoolSettingsForm();
+    };
+    root.querySelector('#after-school-task-form').onsubmit = (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const data = {
+        id: task.id,
+        title: f.title.value.trim() || '未命名任務',
+        note: f.note.value.trim(),
+        points: Math.max(1, Math.min(20, parseInt(f.points.value, 10) || 1)),
+        icon: f.icon.value
+      };
+      state.afterSchoolPlan = afterSchoolPlan().map(item => {
+        if (item.id !== phaseId) return item;
+        const tasks = isNew
+          ? [...item.tasks, data]
+          : item.tasks.map(existing => existing.id === task.id ? data : existing);
+        return { ...item, tasks };
+      });
+      state.afterSchoolPlan = normalizeAfterSchoolPlan(state.afterSchoolPlan);
+      save();
+      renderAfterSchool();
+      openAfterSchoolSettingsForm();
+    };
+  }
 
   /* ---------- icon picker ---------- */
   function iconPicker(selectedId, fieldName = 'icon') {
@@ -1570,12 +2184,14 @@
   function dayPoints(dateKey) {
     const log = state.log[dateKey] || {};
     const bonus = ((state.bingoBonuses || {})[dateKey] || {}).bonus || 0;
+    const afterSchoolPoints = afterSchoolStatusFor(dateKey).earnedPoints || 0;
     return state.habits.reduce((s, h) => s + logEarnedPoints(h, log[h.id]), 0)
          + Object.entries(log).reduce((s, [hid, v]) => {
              // 已被刪掉的習慣：log 還在但找不到 habit，跳過
              return s;
            }, 0)
-         + bonus;
+         + bonus
+         + afterSchoolPoints;
   }
   function renderMine() {
     updateDock();
@@ -1651,6 +2267,7 @@
       let score = 0;
       state.habits.forEach(h => { score += logEarnedPoints(h, log[h.id]); });
       score += ((state.bingoBonuses || {})[k] || {}).bonus || 0;
+      score += afterSchoolStatusFor(k).earnedPoints || 0;
       dayScores[k] = score;
     }
     const maxScore = Math.max(1, ...Object.values(dayScores));
@@ -1689,9 +2306,11 @@
 
   /* ---------- event delegation ---------- */
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-toggle],[data-start-timed],[data-edit],[data-redeem],[data-edit-reward],[data-back]');
+    const t = e.target.closest('[data-toggle],[data-start-timed],[data-edit],[data-redeem],[data-edit-reward],[data-back],[data-after-school-toggle],[data-after-school-next]');
     if (!t) return;
     if (t.dataset.toggle) toggleHabit(t.dataset.toggle, t);
+    else if (t.dataset.afterSchoolToggle) toggleAfterSchoolTask(t.dataset.afterSchoolToggle, t);
+    else if (t.dataset.afterSchoolNext) toggleAfterSchoolTask(t.dataset.afterSchoolNext, t);
     else if (t.dataset.startTimed) startTimedHabit(t.dataset.startTimed);
     else if (t.dataset.edit) {
       const hb = state.habits.find(x => x.id === t.dataset.edit);
@@ -1941,21 +2560,37 @@
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
   document.getElementById('btn-go-today').onclick     = () => goToScreen('today');
+  document.getElementById('btn-go-after-school').onclick = () => goToScreen('after-school');
   document.getElementById('btn-go-mine').onclick      = () => goToScreen('mine');
   document.getElementById('btn-go-rewards-2').onclick = () => goToScreen('rewards');
   // 初始化 dock 按鈕（today 頁）
   updateDockButtons('screen-today');
   document.getElementById('btn-manage-habits').onclick = openManageHabits;
   document.getElementById('btn-manage-rewards').onclick = openManageRewards;
+  document.getElementById('btn-manage-after-school').onclick = openAfterSchoolSettingsForm;
   document.getElementById('btn-edit-name').onclick = openNameForm;
+  document.getElementById('btn-open-after-school').onclick = () => goToScreen('after-school');
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
   document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
-  document.getElementById('unlock-cta').onclick = () => { stopFestivities(); showScreen('screen-rewards'); renderRewards(); };
+  document.getElementById('unlock-cta').onclick = () => {
+    stopFestivities();
+    if (unlockReturnTarget === 'after-school') {
+      showScreen('screen-after-school');
+      renderAfterSchool();
+    } else {
+      showScreen('screen-rewards');
+      renderRewards();
+    }
+  };
 
   /* ---------- init ---------- */
   dailyReset();
   refreshStreak();
-  renderToday();
+  if (window.location.hash === '#after-school') {
+    goToScreen('after-school');
+  } else {
+    renderToday();
+  }
 
 })();

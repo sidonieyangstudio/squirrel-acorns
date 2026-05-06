@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=49">
+<link rel="stylesheet" href="styles.css?v=55">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -51,6 +51,18 @@
     </header>
 
     <main class="list-section">
+      <section class="today-mode-card">
+        <div class="mode-card-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18"/><path d="M6 5v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5"/><path d="M9 9h6"/><path d="M9 13h6"/></svg>
+        </div>
+        <div class="mode-card-text">
+          <div class="mode-card-kicker">今日模式</div>
+          <div class="mode-card-title">放學過關遊戲</div>
+          <div class="mode-card-sub">放學後小任務拆解，一關一關走，有小鬧鐘提醒。</div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-open-after-school">開始</button>
+      </section>
+
       <h2>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         今日小任務 <span class="count" id="habit-count"></span>
@@ -64,6 +76,36 @@
       </div>
     </main>
 
+  </section>
+
+  <!-- ============ SCREEN 6 · AFTER SCHOOL ============ -->
+  <section id="screen-after-school" class="screen" hidden>
+    <header class="after-school-header">
+      <button class="after-school-back" data-back aria-label="回今日小任務">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+        回今天
+      </button>
+      <button class="habit-edit after-school-settings-btn" id="btn-manage-after-school" aria-label="放學設定">
+        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+      </button>
+      <div class="after-school-time" id="after-school-now">現在</div>
+      <div class="after-school-title" id="after-school-title">遊戲機門票＋睡前故事</div>
+      <div class="after-school-sub" id="after-school-sub">先拿遊戲機門票，再把晚上整理好</div>
+
+      <div class="after-school-ticket" id="after-school-ticket">
+        <div>
+          <div class="ticket-title" id="after-school-ticket-title">遊戲機門票</div>
+          <div class="ticket-sub" id="after-school-ticket-sub">中文故事、練琴還沒完成</div>
+          <div class="ticket-reminder" id="after-school-ticket-reminder">6:15 提醒</div>
+        </div>
+        <div class="ticket-gate" id="after-school-ticket-gate">7:00 關門</div>
+      </div>
+    </header>
+
+    <main class="after-school-section">
+      <div id="after-school-list"></div>
+      <button class="btn btn-primary btn-block after-school-next" id="btn-after-school-next">開始下一關</button>
+    </main>
   </section>
 
   <!-- ============ SCREEN 5 · BINGO ============ -->
@@ -172,14 +214,14 @@
     <div class="bg-icons" id="bg-icons" aria-hidden="true"></div>
     <div class="unlock-top">
       <div class="unlock-kicker">UNLOCKED · 解鎖了</div>
-      <h1 class="unlock-title">恭喜你獲得</h1>
+      <h1 class="unlock-title" id="unlock-title">恭喜你獲得</h1>
       <div class="unlock-reward-name" id="unlock-reward-name">獎勵</div>
-      <div class="unlock-sub">
+      <div class="unlock-sub" id="unlock-sub">
         你收集了
         <svg width="20" height="20" viewBox="0 0 256 256" fill="#5E5453" stroke="#5E5453" stroke-width="10" stroke-linejoin="round" stroke="#5E5453" stroke-width="10" stroke-linejoin="round" style="vertical-align:-4px;"><path d="M232,104a56.06,56.06,0,0,0-56-56H136a24,24,0,0,1,24-24,8,8,0,0,0,0-16,40,40,0,0,0-40,40H80a56.06,56.06,0,0,0-56,56,16,16,0,0,0,8,13.83V128c0,35.53,33.12,62.12,59.74,83.49C103.66,221.07,120,234.18,120,240a8,8,0,0,0,16,0c0-5.82,16.34-18.93,28.26-28.51C190.88,190.12,224,163.53,224,128V117.83A16,16,0,0,0,232,104ZM80,64h96a40.06,40.06,0,0,1,40,40H40A40,40,0,0,1,80,64Zm74.25,135c-10.62,8.52-20,16-26.25,23.37-6.25-7.32-15.63-14.85-26.25-23.37C77.8,179.79,48,155.86,48,128v-8H208v8C208,155.86,178.2,179.79,154.25,199Z"/></svg>
         <b id="unlock-points">0</b> 顆橡實
       </div>
-      <div class="unlock-sub2">松鼠也好開心呀！</div>
+      <div class="unlock-sub2" id="unlock-sub2">松鼠也好開心呀！</div>
     </div>
     <div class="unlock-mid">
       <div class="unlock-squirrel-circle"><img src="assets/squirrel-happy.svg" alt="開心松鼠" /></div>
@@ -202,7 +244,7 @@
     <div class="dock-row">
       <span class="dock-label">
         <svg width="22" height="22" viewBox="0 0 256 256" fill="#5E5453" stroke="#5E5453" stroke-width="10" stroke-linejoin="round"><path d="M232,104a56.06,56.06,0,0,0-56-56H136a24,24,0,0,1,24-24,8,8,0,0,0,0-16,40,40,0,0,0-40,40H80a56.06,56.06,0,0,0-56,56,16,16,0,0,0,8,13.83V128c0,35.53,33.12,62.12,59.74,83.49C103.66,221.07,120,234.18,120,240a8,8,0,0,0,16,0c0-5.82,16.34-18.93,28.26-28.51C190.88,190.12,224,163.53,224,128V117.83A16,16,0,0,0,232,104ZM80,64h96a40.06,40.06,0,0,1,40,40H40A40,40,0,0,1,80,64Zm74.25,135c-10.62,8.52-20,16-26.25,23.37-6.25-7.32-15.63-14.85-26.25-23.37C77.8,179.79,48,155.86,48,128v-8H208v8C208,155.86,178.2,179.79,154.25,199Z"/></svg>
-        我的橡實
+        <span id="dock-label-text">我的橡實</span>
       </span>
       <span class="dock-points"><b id="dock-current">0</b> / <span id="dock-target">0</span> 橡實</span>
     </div>
@@ -211,6 +253,10 @@
       <button class="btn" id="btn-go-today" data-go="today">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg>
         今天
+      </button>
+      <button class="btn" id="btn-go-after-school" data-go="after-school">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18"/><path d="M6 5v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5"/><path d="M9 9h6"/><path d="M9 13h6"/></svg>
+        放學
       </button>
       <button class="btn" id="btn-go-mine" data-go="mine">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -266,7 +312,8 @@
   <svg id="ic-tent" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="4" r="2"/><path d="m14 5 3-3 3 3"/><path d="m14 10 3-3 3 3"/><path d="M17 14V2"/><path d="M17 14H7l-5 8h20Z"/><path d="M8 14v8"/><path d="m9 14 5 8"/></svg>
 </template>
 
-<script src="app.js?v=49"></script>
+<script src="after-school-mode.js?v=2"></script>
+<script src="app.js?v=55"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
