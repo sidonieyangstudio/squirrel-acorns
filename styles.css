@@ -1014,7 +1014,7 @@ body.on-unlock #dock { display: none; }
 }
 #screen-unlock:not([hidden]) { display: flex; }
 .unlock-top { position: relative; z-index: 10; flex-shrink: 0; text-align: center; }
-.unlock-mid { position: relative; z-index: 10; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; margin: 18px 0; }
+.unlock-mid { position: relative; z-index: 10; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; margin: 28px 0 18px; }
 .unlock-bottom { position: relative; z-index: 10; flex-shrink: 0; }
 .unlock-kicker {
   font-size: 12px; font-weight: 600; letter-spacing: 0.22em;
@@ -1051,8 +1051,8 @@ body.on-unlock #dock { display: none; }
 }
 .unlock-squirrel-circle img { width: 174px; height: 174px; }
 @keyframes bounce-soft {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
 }
 .glow {
   position: absolute; top: 38%; left: 50%;
@@ -1098,9 +1098,9 @@ body.on-unlock #dock { display: none; }
   .unlock-title { font-size: 30px; }
   .unlock-reward-name { font-size: 25px; margin-top: 4px; }
   .unlock-sub { margin-top: 10px; font-size: 14px; line-height: 1.4; }
-  .unlock-mid { margin: 12px 0; }
-  .unlock-squirrel-circle { width: 176px; height: 176px; }
-  .unlock-squirrel-circle img { width: 146px; height: 146px; }
+  .unlock-mid { margin: 22px 0 12px; }
+  .unlock-squirrel-circle { width: 164px; height: 164px; }
+  .unlock-squirrel-circle img { width: 136px; height: 136px; }
   .unlock-reward-card { padding: 12px 14px; margin-bottom: 10px; }
   #unlock-cta { height: 50px; }
 }
