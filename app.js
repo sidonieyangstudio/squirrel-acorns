@@ -846,7 +846,7 @@
   function updateAfterSchoolAlarmButton() {
     const btn = document.getElementById('btn-after-school-alarm');
     if (!btn) return;
-    btn.textContent = afterSchoolAlarmReady ? '鬧鐘聲已開啟' : '開啟鬧鐘聲';
+    btn.textContent = afterSchoolAlarmReady ? '鬧鐘聲已開啟' : '鬧鐘聲已關閉';
     btn.classList.toggle('ready', afterSchoolAlarmReady);
   }
 
@@ -869,7 +869,16 @@
     activeAfterSchoolAlarmPhaseId = null;
   }
 
-  function armAfterSchoolAlarm() {
+  function toggleAfterSchoolAlarmSound() {
+    const nextReady = afterSchoolAlarm && afterSchoolAlarm.toggleAlarmReady
+      ? afterSchoolAlarm.toggleAlarmReady(afterSchoolAlarmReady)
+      : !afterSchoolAlarmReady;
+    if (!nextReady) {
+      afterSchoolAlarmReady = false;
+      updateAfterSchoolAlarmButton();
+      toast('鬧鐘聲已關閉');
+      return;
+    }
     try {
       ensureAudio();
       afterSchoolAlarmReady = true;
@@ -3007,7 +3016,7 @@
   document.getElementById('btn-manage-rewards').onclick = openManageRewards;
   document.getElementById('btn-manage-after-school').onclick = openAfterSchoolSettingsForm;
   document.getElementById('btn-child-profiles').onclick = openChildProfilesModal;
-  document.getElementById('btn-after-school-alarm').onclick = armAfterSchoolAlarm;
+  document.getElementById('btn-after-school-alarm').onclick = toggleAfterSchoolAlarmSound;
   document.getElementById('after-school-alarm-dismiss').onclick = dismissAfterSchoolAlarm;
   document.getElementById('after-school-alarm-snooze').onclick = snoozeAfterSchoolAlarm;
   document.getElementById('btn-open-after-school').onclick = () => goToScreen('after-school');

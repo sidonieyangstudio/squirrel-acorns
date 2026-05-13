@@ -43,5 +43,9 @@
     return phase ? phase.id : null;
   }
 
-  return { clockMinutes, isReminderDue, isSnoozeDue, nextAlarmPhase, resolveAlarmPhaseId };
+  function toggleAlarmReady(isReady) {
+    return !isReady;
+  }
+
+  return { clockMinutes, isReminderDue, isSnoozeDue, nextAlarmPhase, resolveAlarmPhaseId, toggleAlarmReady };
 });

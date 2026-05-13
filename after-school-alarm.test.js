@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { nextAlarmPhase, resolveAlarmPhaseId } = require('./after-school-alarm.js');
+const { nextAlarmPhase, resolveAlarmPhaseId, toggleAlarmReady } = require('./after-school-alarm.js');
 
 const plan = [
   { id: 'ticket', title: '遊戲機門票', reminderTime: '18:15', tasks: [{ id: 'story' }] },
@@ -37,4 +37,9 @@ test('recovers the alarm phase when a visible overlay lost its active id', () =>
   const phaseId = resolveAlarmPhaseId(null, plan, {}, { ticket: { active: true } }, notDone, new Date('2026-05-06T18:30:00'), 1000);
 
   assert.equal(phaseId, 'ticket');
+});
+
+test('toggles alarm sound on and off from the same button', () => {
+  assert.equal(toggleAlarmReady(false), true);
+  assert.equal(toggleAlarmReady(true), false);
 });
