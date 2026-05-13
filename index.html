@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=67">
+<link rel="stylesheet" href="styles.css?v=68">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -91,6 +91,7 @@
       <div class="after-school-time" id="after-school-now">現在</div>
       <div class="after-school-title" id="after-school-title">遊戲機門票＋睡前故事</div>
       <div class="after-school-sub" id="after-school-sub">先拿遊戲機門票，再把晚上整理好</div>
+      <button class="after-school-alarm-toggle" id="btn-after-school-alarm" type="button">開啟鬧鐘聲</button>
 
       <div class="after-school-ticket" id="after-school-ticket">
         <div>
@@ -106,6 +107,18 @@
       <div id="after-school-list"></div>
       <button class="btn btn-primary btn-block after-school-next" id="btn-after-school-next">開始下一關</button>
     </main>
+  </section>
+
+  <section class="alarm-overlay" id="after-school-alarm-overlay" hidden>
+    <div class="alarm-card">
+      <div class="alarm-kicker">放學提醒</div>
+      <h2 id="after-school-alarm-title">提醒時間到了</h2>
+      <p id="after-school-alarm-sub">先看一下現在要完成哪一關。</p>
+      <div class="alarm-actions">
+        <button class="btn btn-ghost" id="after-school-alarm-snooze" type="button">5 分鐘後再提醒</button>
+        <button class="btn btn-primary" id="after-school-alarm-dismiss" type="button">知道了</button>
+      </div>
+    </div>
   </section>
 
   <!-- ============ SCREEN 5 · BINGO ============ -->
@@ -315,7 +328,8 @@
 <script src="after-school-mode.js?v=2"></script>
 <script src="daily-reset.js?v=1"></script>
 <script src="manage-sort.js?v=1"></script>
-<script src="app.js?v=67"></script>
+<script src="after-school-alarm.js?v=1"></script>
+<script src="app.js?v=68"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

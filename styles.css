@@ -616,6 +616,22 @@ body.parent-mode .greet-row { padding-right: 0; }
   font-size: 14px;
   font-weight: 500;
 }
+.after-school-alarm-toggle {
+  margin-top: 12px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--pill);
+  border: 1px solid rgba(255,255,255,0.54);
+  background: rgba(255,255,255,0.18);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(94,84,83,0.14);
+}
+.after-school-alarm-toggle.ready {
+  background: var(--white);
+  color: var(--orange);
+}
 .after-school-ticket {
   margin-top: 16px;
   background: var(--white);
@@ -1550,6 +1566,59 @@ body.child-mode [data-delete-reward] { display: none !important; }
 }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes toast-out { to { opacity: 0; transform: translate(-50%, 12px); } }
+
+/* ---------- after-school alarm ---------- */
+.alarm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(94,84,83,0.42);
+  backdrop-filter: blur(8px);
+}
+.alarm-card {
+  width: min(100%, 360px);
+  border-radius: 28px;
+  padding: 24px 20px 20px;
+  background: var(--white);
+  color: var(--ink);
+  border: 2px solid var(--orange);
+  box-shadow: var(--shadow-warm);
+  text-align: center;
+}
+.alarm-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: var(--pill);
+  background: var(--pink-bg);
+  color: var(--orange);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+.alarm-card h2 {
+  margin: 14px 0 8px;
+  font-size: 24px;
+  line-height: 1.25;
+}
+.alarm-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.55;
+  font-weight: 600;
+}
+.alarm-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
 
 /* ---------- editor list (manage habits/rewards) ---------- */
 .manage-row {

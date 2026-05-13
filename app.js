@@ -626,6 +626,25 @@
       }, 420);
     } catch (e) {}
   }
+  function afterSchoolAlarmSfx() {
+    try {
+      const ctx = ensureAudio();
+      const now = ctx.currentTime;
+      [880, 1174.66, 880, 1174.66, 1318.51, 1174.66].forEach((freq, i) => {
+        const t0 = now + i * 0.18;
+        const osc = ctx.createOscillator();
+        osc.type = i % 2 ? 'triangle' : 'square';
+        osc.frequency.value = freq;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, t0);
+        gain.gain.linearRampToValueAtTime(0.13, t0 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.18);
+      });
+    } catch (e) {}
+  }
 
   /* ---------- 飛橡實動畫 + 數字跳動 ---------- */
   function flyOneAcorn(fromRect, toRect, jitter = 0) {
@@ -676,6 +695,9 @@
 
   /* ---------- points helpers ---------- */
   const afterSchool = window.SquirrelAfterSchool;
+  const afterSchoolAlarm = window.SquirrelAfterSchoolAlarm;
+  let afterSchoolAlarmReady = false;
+  let activeAfterSchoolAlarmPhaseId = null;
 
   function normalizeClock(value, fallback = '') {
     const text = String(value || '').trim();
@@ -812,24 +834,90 @@
     return !!(phase && phase.tasks && phase.tasks.length) && phase.tasks.every(task => afterSchool.isAfterSchoolDone(log, task.id));
   }
 
-  function maybeFireAfterSchoolReminders(plan, log) {
+  function afterSchoolReminderDaily() {
     const today = todayKey();
     state.afterSchoolReminderLog = state.afterSchoolReminderLog || {};
-    const daily = (state.afterSchoolReminderLog[today] && typeof state.afterSchoolReminderLog[today] === 'object')
+    state.afterSchoolReminderLog[today] = (state.afterSchoolReminderLog[today] && typeof state.afterSchoolReminderLog[today] === 'object')
       ? state.afterSchoolReminderLog[today]
       : {};
-    let fired = false;
+    return state.afterSchoolReminderLog[today];
+  }
+
+  function updateAfterSchoolAlarmButton() {
+    const btn = document.getElementById('btn-after-school-alarm');
+    if (!btn) return;
+    btn.textContent = afterSchoolAlarmReady ? '鬧鐘聲已開啟' : '開啟鬧鐘聲';
+    btn.classList.toggle('ready', afterSchoolAlarmReady);
+  }
+
+  function showAfterSchoolAlarm(phase) {
+    const overlay = document.getElementById('after-school-alarm-overlay');
+    if (!overlay || !phase) return;
+    const alreadyOpen = !overlay.hidden && activeAfterSchoolAlarmPhaseId === phase.id;
+    activeAfterSchoolAlarmPhaseId = phase.id;
+    document.getElementById('after-school-alarm-title').textContent = `${stripPhasePrefix(phase.title)}提醒時間到了`;
+    document.getElementById('after-school-alarm-sub').textContent = phase.id === 'ticket'
+      ? '先完成門票任務，再開心使用。'
+      : '先把晚上整理好，再舒服進入睡前時間。';
+    overlay.hidden = false;
+    if (afterSchoolAlarmReady && !alreadyOpen) afterSchoolAlarmSfx();
+  }
+
+  function hideAfterSchoolAlarm() {
+    const overlay = document.getElementById('after-school-alarm-overlay');
+    if (overlay) overlay.hidden = true;
+    activeAfterSchoolAlarmPhaseId = null;
+  }
+
+  function armAfterSchoolAlarm() {
+    try {
+      ensureAudio();
+      afterSchoolAlarmReady = true;
+      updateAfterSchoolAlarmButton();
+      afterSchoolAlarmSfx();
+      toast('鬧鐘聲已開啟');
+    } catch (e) {
+      toast('請再點一次開啟鬧鐘聲');
+    }
+  }
+
+  function dismissAfterSchoolAlarm() {
+    if (!activeAfterSchoolAlarmPhaseId) return;
+    const daily = afterSchoolReminderDaily();
+    daily[activeAfterSchoolAlarmPhaseId] = { dismissed: true, dismissedAt: Date.now() };
+    save();
+    hideAfterSchoolAlarm();
+    renderAfterSchool();
+  }
+
+  function snoozeAfterSchoolAlarm() {
+    if (!activeAfterSchoolAlarmPhaseId) return;
+    const daily = afterSchoolReminderDaily();
+    daily[activeAfterSchoolAlarmPhaseId] = { snoozeUntil: Date.now() + 5 * 60 * 1000 };
+    save();
+    hideAfterSchoolAlarm();
+    toast('5 分鐘後再提醒');
+  }
+
+  function maybeFireAfterSchoolReminders(plan, log) {
+    const today = todayKey();
+    const daily = afterSchoolReminderDaily();
+    if (afterSchoolAlarm) {
+      const phase = afterSchoolAlarm.nextAlarmPhase(plan, log, daily, isAfterSchoolPhaseDone, new Date(), Date.now());
+      if (!phase) return;
+      daily[phase.id] = { active: true, firedAt: Date.now() };
+      save();
+      showAfterSchoolAlarm(phase);
+      return;
+    }
     plan.filter(phase => phase.id === 'ticket' || phase.id === 'evening').forEach(phase => {
       if (!phase.reminderTime || daily[phase.id] || isAfterSchoolPhaseDone(phase, log) || !isAfterSchoolReminderDue(phase.reminderTime)) return;
       daily[phase.id] = true;
-      fired = true;
       ding(3);
       toast(`${stripPhasePrefix(phase.title)}提醒時間到了`);
-    });
-    if (fired) {
       state.afterSchoolReminderLog[today] = daily;
       save();
-    }
+    });
   }
 
   function afterSchoolTodayLog() {
@@ -975,6 +1063,7 @@
     document.getElementById('after-school-now').textContent = `現在 ${formatClock()}`;
     document.getElementById('after-school-title').textContent = cfg.pageTitle;
     document.getElementById('after-school-sub').textContent = cfg.pageSubtitle;
+    updateAfterSchoolAlarmButton();
     ticketTitle.textContent = ticketName;
     ticketSub.textContent = status.gameTicket.done
       ? `${ticketName}條件都完成了`
@@ -2894,6 +2983,9 @@
   document.getElementById('btn-manage-rewards').onclick = openManageRewards;
   document.getElementById('btn-manage-after-school').onclick = openAfterSchoolSettingsForm;
   document.getElementById('btn-child-profiles').onclick = openChildProfilesModal;
+  document.getElementById('btn-after-school-alarm').onclick = armAfterSchoolAlarm;
+  document.getElementById('after-school-alarm-dismiss').onclick = dismissAfterSchoolAlarm;
+  document.getElementById('after-school-alarm-snooze').onclick = snoozeAfterSchoolAlarm;
   document.getElementById('btn-open-after-school').onclick = () => goToScreen('after-school');
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
