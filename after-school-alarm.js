@@ -35,5 +35,13 @@
     }) || null;
   }
 
-  return { clockMinutes, isReminderDue, isSnoozeDue, nextAlarmPhase };
+  function resolveAlarmPhaseId(activeId, plan, log, daily, isPhaseDone, now = new Date(), nowMs = Date.now()) {
+    if (activeId) return activeId;
+    const activeEntry = Object.entries(daily || {}).find(([, entry]) => entry && entry.active);
+    if (activeEntry) return activeEntry[0];
+    const phase = nextAlarmPhase(plan, log, daily, isPhaseDone, now, nowMs);
+    return phase ? phase.id : null;
+  }
+
+  return { clockMinutes, isReminderDue, isSnoozeDue, nextAlarmPhase, resolveAlarmPhaseId };
 });

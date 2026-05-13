@@ -881,19 +881,43 @@
     }
   }
 
-  function dismissAfterSchoolAlarm() {
-    if (!activeAfterSchoolAlarmPhaseId) return;
+  function currentAfterSchoolAlarmPhaseId() {
     const daily = afterSchoolReminderDaily();
-    daily[activeAfterSchoolAlarmPhaseId] = { dismissed: true, dismissedAt: Date.now() };
+    if (afterSchoolAlarm && afterSchoolAlarm.resolveAlarmPhaseId) {
+      return afterSchoolAlarm.resolveAlarmPhaseId(
+        activeAfterSchoolAlarmPhaseId,
+        afterSchoolPlan(),
+        afterSchoolTodayLog(),
+        daily,
+        isAfterSchoolPhaseDone,
+        new Date(),
+        Date.now()
+      );
+    }
+    return activeAfterSchoolAlarmPhaseId;
+  }
+
+  function dismissAfterSchoolAlarm() {
+    const phaseId = currentAfterSchoolAlarmPhaseId();
+    if (!phaseId) {
+      hideAfterSchoolAlarm();
+      return;
+    }
+    const daily = afterSchoolReminderDaily();
+    daily[phaseId] = { dismissed: true, dismissedAt: Date.now() };
     save();
     hideAfterSchoolAlarm();
     renderAfterSchool();
   }
 
   function snoozeAfterSchoolAlarm() {
-    if (!activeAfterSchoolAlarmPhaseId) return;
+    const phaseId = currentAfterSchoolAlarmPhaseId();
+    if (!phaseId) {
+      hideAfterSchoolAlarm();
+      return;
+    }
     const daily = afterSchoolReminderDaily();
-    daily[activeAfterSchoolAlarmPhaseId] = { snoozeUntil: Date.now() + 5 * 60 * 1000 };
+    daily[phaseId] = { snoozeUntil: Date.now() + 5 * 60 * 1000 };
     save();
     hideAfterSchoolAlarm();
     toast('5 分鐘後再提醒');
