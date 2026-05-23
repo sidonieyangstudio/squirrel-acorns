@@ -4,6 +4,8 @@
 (function () {
   'use strict';
 
+  const bingoRules = window.SquirrelBingo;
+
   /* ---------- storage ---------- */
   const KEY = 'squirrel-points-v3';
   const KEY_OLD = 'squirrel-points-v2';
@@ -1258,69 +1260,16 @@
   }
 
   function bingoGridConfig() {
-    if (state.habits.length <= 12) return { total: 9, cols: 3, rows: 3 };
-    return { total: 16, cols: 4, rows: 4 };
+    const log = state.log[todayKey()] || {};
+    return bingoRules.bingoGridConfig(bingoRules.dailyCompletionCount(state.habits, log));
   }
   function bingoConfigFromCells(cells) {
-    return (cells || []).length <= 9
-      ? { total: 9, cols: 3, rows: 3 }
-      : { total: 16, cols: 4, rows: 4 };
-  }
-
-  function shuffled(list) {
-    const arr = list.slice();
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  function pickBingoHabits(cfg, log) {
-    const all = state.habits.slice();
-    if (all.length <= cfg.total) return shuffled(all);
-
-    const selected = shuffled(all).slice(0, cfg.total);
-    if (cfg.total !== 9) return selected;
-
-    const allUndone = all.filter(habit => !isLogDone(log[habit.id]));
-    const neededWhite = Math.min(2, allUndone.length);
-    let selectedUndone = selected.filter(habit => !isLogDone(log[habit.id])).length;
-    if (selectedUndone >= neededWhite) return selected;
-
-    const selectedIds = new Set(selected.map(habit => habit.id));
-    const extraUndone = shuffled(allUndone.filter(habit => !selectedIds.has(habit.id)));
-    while (selectedUndone < neededWhite && extraUndone.length) {
-      const replaceIndex = selected.findIndex(habit => isLogDone(log[habit.id]));
-      if (replaceIndex < 0) break;
-      selected[replaceIndex] = extraUndone.shift();
-      selectedUndone++;
-    }
-    return shuffled(selected);
+    return bingoRules.bingoConfigFromCells(cells);
   }
 
   function buildBingoCells() {
-    const cfg = bingoGridConfig();
     const log = state.log[todayKey()] || {};
-    const habits = pickBingoHabits(cfg, log).slice(0, cfg.total);
-    const cells = habits.map(habit => ({
-      habitId: habit.id,
-      title: habit.title,
-      icon: habit.icon,
-      done: isLogDone(log[habit.id]),
-      empty: false
-    }));
-
-    let useFree = true;
-    while (cells.length < cfg.total) {
-      if (useFree) {
-        cells.push({ title: 'FREE', icon: 'ic-star', done: true, empty: false, free: true });
-      } else {
-        cells.push({ title: '橡實', done: false, empty: true, acorn: true });
-      }
-      useFree = !useFree;
-    }
-    return shuffled(cells);
+    return bingoRules.buildBingoCells({ habits: state.habits, log });
   }
 
   function renderBingoCells(cells, spinning = false, cfg = bingoGridConfig()) {
@@ -1340,34 +1289,11 @@
   }
 
   function bingoLineCandidates(cfg) {
-    const lines = [];
-    for (let r = 0; r < cfg.rows; r++) {
-      const indexes = [];
-      for (let c = 0; c < cfg.cols; c++) indexes.push(r * cfg.cols + c);
-      lines.push({ indexes, x1: 6, y1: ((r + 0.5) / cfg.rows) * 100, x2: 94, y2: ((r + 0.5) / cfg.rows) * 100 });
-    }
-    for (let c = 0; c < cfg.cols; c++) {
-      const indexes = [];
-      for (let r = 0; r < cfg.rows; r++) indexes.push(r * cfg.cols + c);
-      lines.push({ indexes, x1: ((c + 0.5) / cfg.cols) * 100, y1: 6, x2: ((c + 0.5) / cfg.cols) * 100, y2: 94 });
-    }
-    if (cfg.rows === cfg.cols) {
-      const down = [];
-      const up = [];
-      for (let i = 0; i < cfg.rows; i++) {
-        down.push(i * cfg.cols + i);
-        up.push(i * cfg.cols + (cfg.cols - 1 - i));
-      }
-      lines.push({ indexes: down, x1: 8, y1: 8, x2: 92, y2: 92 });
-      lines.push({ indexes: up, x1: 92, y1: 8, x2: 8, y2: 92 });
-    }
-    return lines;
+    return bingoRules.bingoLineCandidates(cfg);
   }
 
   function completedBingoLines(cells, cfg = bingoGridConfig()) {
-    return bingoLineCandidates(cfg).filter(line =>
-      line.indexes.every(i => cells[i] && cells[i].done && !cells[i].empty)
-    );
+    return bingoRules.completedBingoLines(cells, cfg);
   }
 
   function drawBingoLine(line, index) {
