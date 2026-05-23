@@ -1311,12 +1311,14 @@
     }, index * 620);
   }
 
-  function showBingoResult(bonus, before, after, fromEl) {
+  function showBingoResult(bonus, before, after, fromEl, lineCount = bonus) {
     const box = document.getElementById('bingo-result');
     const num = document.getElementById('bingo-bonus-num');
     const sub = document.getElementById('bingo-result-sub');
     box.hidden = false;
-    sub.textContent = bonus > 0 ? '顆橡實已加進今天' : '今天沒有連線，明天再試';
+    sub.textContent = bonus > 0
+      ? (lineCount > bonus ? `條線很多，加碼最高 ${bonus} 顆` : '顆橡實已加進今天')
+      : '今天沒有連線，明天再試';
     tweenNumber(num, 0, bonus, 900);
     if (bonus > 0) {
       bingoTotalSfx();
@@ -1351,7 +1353,7 @@
     const cells = buildBingoCells();
     renderBingoCells(cells, false);
     const lines = completedBingoLines(cells, cfg);
-    const bonus = lines.length;
+    const bonus = bingoRules.calculateBingoBonus(lines, cfg);
     const after = before + bonus;
     const btn = document.getElementById('btn-bingo-spin');
     btn.disabled = true;
@@ -1362,6 +1364,7 @@
     state.bingoBonuses[today] = {
       bonus,
       lines: lines.length,
+      overflow: bingoRules.bingoOverflowCount(state.habits, state.log[today] || {}, cells),
       cells,
       cfg,
       at: new Date().toISOString()
@@ -1369,7 +1372,13 @@
     if (bonus > 0) state.points += bonus;
     save();
 
-    setTimeout(() => showBingoResult(bonus, before, after, btn), 650 * lines.length + 450);
+    setTimeout(() => showBingoResult(bonus, before, after, btn, lines.length), 650 * lines.length + 450);
+  }
+
+  function bingoBoardNote(cells) {
+    const overflow = bingoRules.bingoOverflowCount(state.habits, state.log[todayKey()] || {}, cells);
+    if (overflow > 0) return `還有 ${overflow} 個完成任務也算在今天。`;
+    return '粉色格子代表今天完成的任務。';
   }
 
   function renderBingo() {
@@ -1404,7 +1413,9 @@
       btn.textContent = '今天已加碼';
       result.hidden = false;
       num.textContent = saved.bonus || 0;
-      resultSub.textContent = saved.bonus > 0 ? '顆橡實已加進今天' : '今天沒有連線，明天再試';
+      resultSub.textContent = saved.bonus > 0
+        ? ((saved.lines || 0) > (saved.bonus || 0) ? `條線很多，加碼最高 ${saved.bonus || 0} 顆` : '顆橡實已加進今天')
+        : '今天沒有連線，明天再試';
       sub.textContent = `今天已加碼 +${saved.bonus || 0} 顆，明天再來。`;
       return;
     }
@@ -1414,10 +1425,12 @@
     sub.innerHTML = '粉色格子連成線<br>就可以加碼橡實';
     let cells = buildBingoCells();
     renderBingoCells(cells, true);
+    sub.textContent = bingoBoardNote(cells);
     stopBingoSpin();
     bingoTimer = setInterval(() => {
       cells = buildBingoCells();
       renderBingoCells(cells, true);
+      sub.textContent = bingoBoardNote(cells);
     }, 170);
     bingoTickTimer = setInterval(bingoTickSfx, 340);
   }
@@ -1429,7 +1442,7 @@
       <div class="bingo-intro-card">
         <div>粉色格子代表今天已完成的任務。</div>
         <div>直線、橫線、對角線都算賓果。</div>
-        <div>FREE 格是送你的，會一起幫忙連線。</div>
+        <div>線很多時，今天最多加碼 5 顆。</div>
       </div>
       <div class="modal-actions" style="margin-top:18px;">
         <button type="button" class="btn btn-primary" data-bingo-intro-ok>知道了</button>

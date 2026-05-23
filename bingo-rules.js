@@ -28,9 +28,9 @@
 
   function bingoGridConfig(doneCount) {
     if ((doneCount || 0) >= 10) {
-      return { total: 16, cols: 4, rows: 4, maxDone: 12, maxLines: 4 };
+      return { total: 16, cols: 4, rows: 4, bonusCap: 5 };
     }
-    return { total: 9, cols: 3, rows: 3, maxDone: 7, maxLines: 3 };
+    return { total: 9, cols: 3, rows: 3, bonusCap: 5 };
   }
 
   function shuffled(list, rng) {
@@ -51,7 +51,7 @@
       else undone.push(habit);
     });
 
-    const selectedDone = shuffled(done, rng).slice(0, Math.min(done.length, cfg.maxDone));
+    const selectedDone = shuffled(done, rng).slice(0, Math.min(done.length, cfg.total));
     const selected = selectedDone.concat(
       shuffled(undone, rng).slice(0, Math.max(0, cfg.total - selectedDone.length))
     );
@@ -59,7 +59,6 @@
   }
 
   function makeCells(habits, log, cfg, rng) {
-    const doneCount = dailyCompletionCount(habits, log);
     const habitsForBoard = pickBingoHabits(habits, log, cfg, rng);
     const cells = habitsForBoard.slice(0, cfg.total).map(habit => ({
       habitId: habit.id,
@@ -69,7 +68,7 @@
       empty: false
     }));
 
-    const keepBlanks = cfg.total === 16 || doneCount > cfg.maxDone;
+    const keepBlanks = cfg.total === 16;
     let useFree = !keepBlanks;
     while (cells.length < cfg.total) {
       if (keepBlanks) {
@@ -117,25 +116,22 @@
 
   function buildBingoCells({ habits, log, rng }) {
     const cfg = bingoGridConfig(dailyCompletionCount(habits, log));
-    let bestCells = null;
-    let bestLineCount = Infinity;
+    return makeCells(habits, log, cfg, rng);
+  }
 
-    for (let attempt = 0; attempt < 80; attempt++) {
-      const cells = makeCells(habits, log, cfg, rng);
-      const lineCount = completedBingoLines(cells, cfg).length;
-      if (lineCount <= cfg.maxLines) return cells;
-      if (lineCount < bestLineCount) {
-        bestCells = cells;
-        bestLineCount = lineCount;
-      }
-    }
-    return bestCells || makeCells(habits, log, cfg, rng);
+  function calculateBingoBonus(lines, cfg) {
+    return Math.min((lines || []).length, (cfg && cfg.bonusCap) || 5);
+  }
+
+  function bingoOverflowCount(habits, log, cells) {
+    const shown = new Set((cells || []).map(cell => cell.habitId).filter(Boolean));
+    return (habits || []).filter(habit => isLogDone((log || {})[habit.id]) && !shown.has(habit.id)).length;
   }
 
   function bingoConfigFromCells(cells) {
     return (cells || []).length <= 9
-      ? { total: 9, cols: 3, rows: 3, maxDone: 7, maxLines: 3 }
-      : { total: 16, cols: 4, rows: 4, maxDone: 12, maxLines: 4 };
+      ? { total: 9, cols: 3, rows: 3, bonusCap: 5 }
+      : { total: 16, cols: 4, rows: 4, bonusCap: 5 };
   }
 
   return {
@@ -145,6 +141,8 @@
     bingoConfigFromCells,
     buildBingoCells,
     bingoLineCandidates,
-    completedBingoLines
+    completedBingoLines,
+    calculateBingoBonus,
+    bingoOverflowCount
   };
 });
