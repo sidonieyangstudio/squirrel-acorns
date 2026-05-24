@@ -493,6 +493,13 @@
     jackpotFanfare();
     setTimeout(coinShower, 180);
   }
+  function reflectionPickSfx() {
+    jsfxrPlay(SFX_HABIT, 0.92, 0.28);
+  }
+  function reflectionStickerSfx() {
+    jsfxrPlay(SFX_REWARD, 1.18, 0.55);
+    setTimeout(() => jsfxrPlay(SFX_HABIT, 1.45, 0.35), 90);
+  }
   /* ---------- 慶祝音效套組：上揚琶音 + 金幣聲 + 鈴鐺 + 拉長歡呼 ---------- */
   function jackpotFanfare() {
     try {
@@ -1150,13 +1157,14 @@
       saveBtn.disabled = !(selected.mood && selected.blocker);
     };
     root.querySelectorAll('[data-reflection-mood]').forEach(btn => {
-      btn.onclick = () => { selected.mood = btn.dataset.reflectionMood; refresh(); };
+      btn.onclick = () => { selected.mood = btn.dataset.reflectionMood; reflectionPickSfx(); refresh(); };
     });
     root.querySelectorAll('[data-reflection-blocker]').forEach(btn => {
-      btn.onclick = () => { selected.blocker = btn.dataset.reflectionBlocker; refresh(); };
+      btn.onclick = () => { selected.blocker = btn.dataset.reflectionBlocker; reflectionPickSfx(); refresh(); };
     });
     root.querySelector('[data-reflection-cancel]').onclick = closeModal;
     saveBtn.onclick = () => {
+      reflectionStickerSfx();
       state.dailyReflections = reflectionRules.saveDailyReflection(
         state.dailyReflections || {},
         todayKey(),
