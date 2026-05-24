@@ -1423,10 +1423,10 @@ body.parent-mode .greet-row { padding-right: 0; }
   place-items: center;
 }
 .sticker-slot-img img {
-  width: 78%;
-  height: 78%;
-  max-width: 46px;
-  max-height: 46px;
+  width: 96%;
+  height: 96%;
+  max-width: 76px;
+  max-height: 76px;
   object-fit: contain;
   display: block;
 }
