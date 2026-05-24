@@ -1041,21 +1041,6 @@
     return iconSvg('ic-star', size, '#DA844F');
   }
 
-  function stickerCardHtml(item, compact = false) {
-    const sticker = item.sticker || item;
-    return `
-      <div class="sticker-chip${compact ? ' compact' : ''}">
-        <div class="sticker-icon" style="--sticker-color:${escAttr(sticker.color || '#DA844F')}">
-          ${stickerIconHtml(sticker, compact ? 20 : 26)}
-        </div>
-        <div class="sticker-copy">
-          <div class="sticker-title">${escHtml(sticker.label || '貼紙')}</div>
-          ${item.dateKey ? `<div class="sticker-date">${formatDate(item.dateKey)}</div>` : ''}
-        </div>
-      </div>
-    `;
-  }
-
   function reflectionStickerPreviewHtml(sticker) {
     return `
       <div class="reflection-preview-sticker" style="--sticker-color:${escAttr(sticker.color || '#DA844F')}">
@@ -1072,6 +1057,15 @@
           ${stickerIconHtml(sticker, 68)}
         </div>
         <div class="reflection-collected-copy">今天收集到的貼紙</div>
+      </div>
+    `;
+  }
+
+  function reflectionCardStickerHtml(entry) {
+    const sticker = entry.sticker || entry;
+    return `
+      <div class="reflection-card-sticker" style="--sticker-color:${escAttr(sticker.color || '#DA844F')}">
+        ${stickerIconHtml(sticker, 34)}
       </div>
     `;
   }
@@ -1095,7 +1089,7 @@
     if (entry && entry.completed && entry.sticker) {
       wrap.innerHTML = `
         <section class="reflection-card done">
-          ${stickerCardHtml(entry, true)}
+          ${reflectionCardStickerHtml(entry)}
           <div class="reflection-card-copy">
             <div class="reflection-card-title">今天小回顧完成了</div>
             <div class="reflection-card-sub">這張貼紙已經收進小本本。</div>

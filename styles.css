@@ -314,6 +314,22 @@ body.parent-mode .greet-row { padding-right: 0; }
   place-items: center;
   border: 1px solid var(--hairline);
 }
+.reflection-card-sticker {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--pink-bg);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+}
+.reflection-card-sticker img,
+.reflection-card-sticker svg {
+  width: 68%;
+  height: 68%;
+  object-fit: contain;
+  display: block;
+}
 .reflection-card-copy {
   min-width: 0;
 }
