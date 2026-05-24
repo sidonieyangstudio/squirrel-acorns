@@ -9,7 +9,8 @@ const {
   normalizeBlockers,
   saveDailyReflection,
   stickerForDate,
-  collectedStickers
+  collectedStickers,
+  stickerCollectionBoard
 } = require('./reflection-rules.js');
 
 test('mood choices use kaomoji faces', () => {
@@ -119,4 +120,40 @@ test('sticker collection only includes completed reflection days', () => {
   assert.equal(stickers.length, 1);
   assert.equal(stickers[0].dateKey, '2026-05-23');
   assert.ok(stickers[0].sticker.label);
+});
+
+test('sticker collection board follows the selected theme and keeps empty slots', () => {
+  const sticker = STICKER_THEMES.vehicle.stickers[2];
+  const reflections = {
+    '2026-05-23': {
+      completed: true,
+      sticker,
+      mood: 'proud',
+      blocker: 'homework'
+    }
+  };
+
+  const board = stickerCollectionBoard(reflections, 'vehicle');
+  const filled = board.filter(slot => slot.collected);
+
+  assert.equal(board.length, 14);
+  assert.equal(filled.length, 1);
+  assert.equal(filled[0].sticker.id, sticker.id);
+  assert.equal(filled[0].dateKey, '2026-05-23');
+  assert.equal(board.filter(slot => !slot.collected).length, 13);
+});
+
+test('sticker collection board uses the first collected date for repeated stickers', () => {
+  const sticker = STICKER_THEMES.daily.stickers[0];
+  const reflections = {
+    '2026-05-23': { completed: true, sticker },
+    '2026-05-24': { completed: true, sticker }
+  };
+
+  const board = stickerCollectionBoard(reflections, 'daily');
+  const filled = board.filter(slot => slot.collected);
+
+  assert.equal(board.length, 24);
+  assert.equal(filled.length, 1);
+  assert.equal(filled[0].dateKey, '2026-05-23');
 });

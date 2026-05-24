@@ -136,6 +136,22 @@
       .map(([dateKey, entry]) => ({ dateKey, sticker: entry.sticker }));
   }
 
+  function stickerCollectionBoard(reflections, theme) {
+    const collectedBySticker = new Map();
+    collectedStickers(reflections).forEach(item => {
+      const id = item.sticker && item.sticker.id;
+      if (id && !collectedBySticker.has(id)) collectedBySticker.set(id, item.dateKey);
+    });
+    return stickerPoolForTheme(theme).map(sticker => {
+      const dateKey = collectedBySticker.get(sticker.id) || '';
+      return {
+        sticker,
+        dateKey,
+        collected: !!dateKey
+      };
+    });
+  }
+
   return {
     MOODS,
     DEFAULT_BLOCKERS,
@@ -145,6 +161,7 @@
     normalizeBlockers,
     stickerForDate,
     saveDailyReflection,
-    collectedStickers
+    collectedStickers,
+    stickerCollectionBoard
   };
 });

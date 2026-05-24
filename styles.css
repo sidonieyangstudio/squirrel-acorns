@@ -1385,6 +1385,58 @@ body.parent-mode .greet-row { padding-right: 0; }
   font-size: 11px;
   color: var(--ink-muted);
 }
+.sticker-album-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.sticker-album-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.sticker-slot {
+  aspect-ratio: 1 / 1.16;
+  border-radius: 14px;
+  border: 1px dashed rgba(94,84,83,0.16);
+  background: rgba(254,251,249,0.58);
+  display: grid;
+  grid-template-rows: 1fr 18px;
+  align-items: center;
+  justify-items: center;
+  padding: 6px 4px 5px;
+}
+.sticker-slot.collected {
+  border-style: solid;
+  background: var(--white);
+  box-shadow: var(--shadow-xs);
+}
+.sticker-slot-img {
+  width: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.sticker-slot-img img {
+  width: 78%;
+  height: 78%;
+  max-width: 46px;
+  max-height: 46px;
+  object-fit: contain;
+  display: block;
+}
+.sticker-slot-date {
+  min-height: 14px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
 
 /* ---------- check animation: flying acorn + pop ---------- */
 .check.done svg { animation: check-pop .35s var(--ease); }

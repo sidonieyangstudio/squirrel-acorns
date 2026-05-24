@@ -1046,6 +1046,18 @@
     `;
   }
 
+  function stickerCollectionSlotHtml(slot) {
+    const sticker = slot.sticker || {};
+    return `
+      <div class="sticker-slot${slot.collected ? ' collected' : ''}">
+        <div class="sticker-slot-img">
+          ${slot.collected ? stickerIconHtml(sticker, 42) : ''}
+        </div>
+        <div class="sticker-slot-date">${slot.collected ? formatDateShort(slot.dateKey) : ''}</div>
+      </div>
+    `;
+  }
+
   function renderReflectionCard() {
     const wrap = document.getElementById('reflection-card');
     if (!wrap || !reflectionRules) return;
@@ -2885,20 +2897,25 @@
   function renderStickerCollection() {
     const list = document.getElementById('mine-sticker-list');
     if (!list || !reflectionRules) return;
-    const stickers = reflectionRules.collectedStickers(state.dailyReflections || {});
-    if (!stickers.length) {
-      list.innerHTML = '<div class="empty">還沒有貼紙～<br>完成今天小回顧就會收進來。</div>';
-      return;
-    }
+    const board = reflectionRules.stickerCollectionBoard(state.dailyReflections || {}, stickerThemeId());
+    const collectedCount = board.filter(slot => slot.collected).length;
     list.innerHTML = `
-      <div class="sticker-grid">
-        ${stickers.slice(-24).reverse().map(item => stickerCardHtml(item)).join('')}
+      <div class="sticker-album-head">
+        <span>${reflectionRules.STICKER_THEMES[stickerThemeId()].label}</span>
+        <span>${collectedCount}/${board.length}</span>
+      </div>
+      <div class="sticker-album-grid">
+        ${board.map(stickerCollectionSlotHtml).join('')}
       </div>
     `;
   }
   function formatDate(key) {
     const [y, m, d] = key.split('-');
     return `${parseInt(m,10)}月${parseInt(d,10)}日`;
+  }
+  function formatDateShort(key) {
+    const [y, m, d] = String(key || '').split('-');
+    return m && d ? `${parseInt(m,10)}/${parseInt(d,10)}` : '';
   }
   function renderCalendar() {
     const wrap = document.getElementById('mine-calendar');
