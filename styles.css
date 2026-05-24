@@ -1796,6 +1796,12 @@ body.child-mode [data-delete-reward] { display: none !important; }
   font-weight: 600;
   letter-spacing: 0.08em;
 }
+.reflection-preview-message {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  font-weight: 700;
+}
 .reflection-preview-hint {
   font-size: 11px;
   line-height: 1.5;
