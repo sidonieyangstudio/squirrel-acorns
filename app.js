@@ -1056,6 +1056,14 @@
     `;
   }
 
+  function reflectionStickerPreviewHtml(sticker) {
+    return `
+      <div class="reflection-preview-sticker" style="--sticker-color:${escAttr(sticker.color || '#DA844F')}">
+        ${stickerIconHtml(sticker, 56)}
+      </div>
+    `;
+  }
+
   function stickerCollectionSlotHtml(slot) {
     const sticker = slot.sticker || {};
     return `
@@ -1143,7 +1151,7 @@
             <div class="reflection-preview-message">送自己一張貼紙，為明天加油。</div>
             <div class="reflection-preview-hint">貼紙主題可到家長模式的孩子檔案調整。</div>
           </div>
-          ${stickerCardHtml(sticker)}
+          ${reflectionStickerPreviewHtml(sticker)}
         </div>
       </div>
       <div class="modal-actions" style="margin-top:18px;">
