@@ -133,6 +133,11 @@ body.on-unlock #dock { display: none; }
   background: var(--pink); color: var(--white); border-color: transparent;
   box-shadow: 0 8px 20px rgba(219, 109, 102, 0.24);
 }
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 .btn-trash { width: 50px; height: 50px; padding: 0; border-radius: 16px; }
 
 .icon { display: inline-block; flex-shrink: 0; vertical-align: middle; }
@@ -284,6 +289,44 @@ body.parent-mode .greet-row { padding-right: 0; }
 }
 .today-mode-card .btn {
   flex-shrink: 0;
+}
+.reflection-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 14px;
+  background: var(--white);
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+.reflection-card.done {
+  background: linear-gradient(135deg, var(--white), rgba(164,174,146,0.16));
+}
+.reflection-card-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--pink-bg);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+}
+.reflection-card-copy {
+  min-width: 0;
+}
+.reflection-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.reflection-card-sub {
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 .list-section h2 {
   font-size: 14px; font-weight: 600; margin: 0 0 12px;
@@ -1286,6 +1329,57 @@ body.parent-mode .greet-row { padding-right: 0; }
 .mine-cal-day.lv3 { background: #e89a6a; color: var(--white); border-color: transparent; }
 .mine-cal-day.lv4 { background: var(--orange); color: var(--white); border-color: transparent; }
 
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.sticker-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--white);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.sticker-chip.compact {
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+.sticker-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: rgba(218,132,79,0.10);
+  border: 1px solid var(--hairline);
+}
+.sticker-chip.compact .sticker-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+}
+.sticker-copy {
+  min-width: 0;
+}
+.sticker-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.sticker-date {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
 /* ---------- check animation: flying acorn + pop ---------- */
 .check.done svg { animation: check-pop .35s var(--ease); }
 @keyframes check-pop {
@@ -1551,6 +1645,80 @@ body.child-mode [data-delete-reward] { display: none !important; }
 }
 .modal-actions .btn { flex: 1; }
 .modal-actions .btn-danger { flex: 0 0 auto; padding: 14px; }
+
+.reflection-form {
+  display: grid;
+  gap: 16px;
+}
+.reflection-question {
+  background: var(--pink-bg);
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  padding: 14px;
+}
+.reflection-question-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+.reflection-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.reflection-moods {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.reflection-option {
+  min-height: 48px;
+  padding: 9px 8px;
+  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  background: var(--white);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  box-shadow: var(--shadow-xs);
+}
+.reflection-option.selected {
+  border-color: var(--orange);
+  background: var(--light-pink);
+  box-shadow: var(--ring-warm);
+}
+.reflection-face {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--orange);
+}
+.reflection-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px dashed rgba(218,132,79,0.36);
+  background: rgba(235,185,94,0.10);
+}
+.reflection-preview-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.reflection-sticker-big {
+  padding: 16px;
+  background: var(--pink-bg);
+  border: 1px solid var(--hairline);
+  border-radius: 20px;
+}
+.reflection-bingo-btn {
+  margin-top: 14px;
+}
 
 /* ---------- toast ---------- */
 .toast {

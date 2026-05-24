@@ -5,6 +5,7 @@
   'use strict';
 
   const bingoRules = window.SquirrelBingo;
+  const reflectionRules = window.SquirrelReflection;
 
   /* ---------- storage ---------- */
   const KEY = 'squirrel-points-v3';
@@ -99,6 +100,7 @@
     lastActiveDate: null,
     redeemed: [],                    // [{ id, rewardId, title, icon, cost, date }]
     bingoBonuses: {},                // { '2026-05-01': { bonus, lines, at } }
+    dailyReflections: {},            // { '2026-05-01': { mood, blocker, sticker, completed } }
     timedRuns: {},                   // { '2026-05-01': { habitId: { startedAt, expiresAt } } }
     afterSchoolLog: {},              // { '2026-05-01': { taskId: { done, at } } }
     afterSchoolReminderLog: {},      // { '2026-05-01': { phaseId: true } }
@@ -987,6 +989,164 @@
     return visibleHabitsToday().reduce((s, h) => s + habitFullPoints(h), 0) + afterSchoolMax;
   }
 
+  function todayReflection() {
+    state.dailyReflections = state.dailyReflections || {};
+    return state.dailyReflections[todayKey()] || null;
+  }
+
+  function hasCompletedReflection() {
+    const entry = todayReflection();
+    return !!(entry && entry.completed && entry.sticker);
+  }
+
+  function stickerIconHtml(sticker, size = 26) {
+    const color = sticker && sticker.color ? sticker.color : '#DA844F';
+    return iconSvg((sticker && sticker.icon) || 'ic-star', size, color);
+  }
+
+  function stickerCardHtml(item, compact = false) {
+    const sticker = item.sticker || item;
+    return `
+      <div class="sticker-chip${compact ? ' compact' : ''}">
+        <div class="sticker-icon" style="--sticker-color:${escAttr(sticker.color || '#DA844F')}">
+          ${stickerIconHtml(sticker, compact ? 20 : 26)}
+        </div>
+        <div class="sticker-copy">
+          <div class="sticker-title">${escHtml(sticker.label || '貼紙')}</div>
+          ${item.dateKey ? `<div class="sticker-date">${formatDate(item.dateKey)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderReflectionCard() {
+    const wrap = document.getElementById('reflection-card');
+    if (!wrap || !reflectionRules) return;
+    const entry = todayReflection();
+    if (entry && entry.completed && entry.sticker) {
+      wrap.innerHTML = `
+        <section class="reflection-card done">
+          ${stickerCardHtml(entry, true)}
+          <div class="reflection-card-copy">
+            <div class="reflection-card-title">今天小回顧完成了</div>
+            <div class="reflection-card-sub">這張貼紙已經收進小本本。</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="btn-open-reflection">查看</button>
+        </section>
+      `;
+      return;
+    }
+    wrap.innerHTML = `
+      <section class="reflection-card">
+        <div class="reflection-card-mark">${iconSvg('ic-sparkles', 22, '#DA844F')}</div>
+        <div class="reflection-card-copy">
+          <div class="reflection-card-title">今天小回顧</div>
+          <div class="reflection-card-sub">選三個答案，送自己一張貼紙。</div>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-open-reflection">開始</button>
+      </section>
+    `;
+  }
+
+  function openDailyReflectionModal() {
+    if (!reflectionRules) return;
+    const entry = todayReflection() || {};
+    const selected = {
+      mood: entry.mood || '',
+      blocker: entry.blocker || ''
+    };
+    const sticker = (entry.completed && entry.sticker)
+      ? entry.sticker
+      : reflectionRules.stickerForDate(todayKey(), state.id);
+
+    openModal(`
+      <h3 class="modal-title">今天小回顧</h3>
+      <p class="modal-sub">不用打分數，只要選最像今天的答案。</p>
+      <div class="reflection-form">
+        <div class="reflection-question">
+          <div class="reflection-question-title">我對今天自己的表現滿意度如何？</div>
+          <div class="reflection-options reflection-moods">
+            ${reflectionRules.MOODS.map(item => `
+              <button type="button" class="reflection-option${selected.mood === item.id ? ' selected' : ''}" data-reflection-mood="${item.id}">
+                <span class="reflection-face">${escHtml(item.face)}</span>
+                <span>${escHtml(item.label)}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="reflection-question">
+          <div class="reflection-question-title">今天哪件事卡住我了？</div>
+          <div class="reflection-options">
+            ${reflectionRules.BLOCKERS.map(item => `
+              <button type="button" class="reflection-option${selected.blocker === item.id ? ' selected' : ''}" data-reflection-blocker="${item.id}">
+                ${escHtml(item.label)}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="reflection-preview">
+          <div class="reflection-preview-label">今天的貼紙</div>
+          ${stickerCardHtml(sticker)}
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:18px;">
+        <button type="button" class="btn btn-ghost" data-reflection-cancel>晚點再填</button>
+        <button type="button" class="btn btn-primary" data-reflection-save>收下貼紙</button>
+      </div>
+    `);
+
+    const root = document.getElementById('modal');
+    const saveBtn = root.querySelector('[data-reflection-save]');
+    const refresh = () => {
+      root.querySelectorAll('[data-reflection-mood]').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.reflectionMood === selected.mood);
+      });
+      root.querySelectorAll('[data-reflection-blocker]').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.reflectionBlocker === selected.blocker);
+      });
+      saveBtn.disabled = !(selected.mood && selected.blocker);
+    };
+    root.querySelectorAll('[data-reflection-mood]').forEach(btn => {
+      btn.onclick = () => { selected.mood = btn.dataset.reflectionMood; refresh(); };
+    });
+    root.querySelectorAll('[data-reflection-blocker]').forEach(btn => {
+      btn.onclick = () => { selected.blocker = btn.dataset.reflectionBlocker; refresh(); };
+    });
+    root.querySelector('[data-reflection-cancel]').onclick = closeModal;
+    saveBtn.onclick = () => {
+      state.dailyReflections = reflectionRules.saveDailyReflection(
+        state.dailyReflections || {},
+        todayKey(),
+        selected,
+        state.id
+      );
+      save();
+      renderReflectionCard();
+      renderMineIfVisible();
+      showReflectionStickerModal(state.dailyReflections[todayKey()]);
+    };
+    refresh();
+  }
+
+  function showReflectionStickerModal(entry) {
+    openModal(`
+      <h3 class="modal-title">貼紙收好了</h3>
+      <p class="modal-sub">明天也可以再送自己一張新的。</p>
+      <div class="reflection-sticker-big">
+        ${stickerCardHtml(entry)}
+      </div>
+      <div class="modal-actions" style="margin-top:18px;">
+        <button type="button" class="btn btn-primary" data-reflection-done>知道了</button>
+      </div>
+    `);
+    document.getElementById('modal').querySelector('[data-reflection-done]').onclick = closeModal;
+  }
+
+  function renderMineIfVisible() {
+    const mine = document.getElementById('screen-mine');
+    if (mine && !mine.hidden) renderMine();
+  }
+
   /* ---------- render: today ---------- */
   let todayCountdownTimer = null;
   function scheduleTodayCountdown() {
@@ -1056,6 +1216,7 @@
     // dock
     const cur = todayPoints();
     updateDock();
+    renderReflectionCard();
 
     // header
     document.getElementById('user-name').textContent = childName();
@@ -1315,7 +1476,9 @@
     const box = document.getElementById('bingo-result');
     const num = document.getElementById('bingo-bonus-num');
     const sub = document.getElementById('bingo-result-sub');
+    const reflectionBtn = document.getElementById('btn-bingo-reflection');
     box.hidden = false;
+    if (reflectionBtn) reflectionBtn.hidden = hasCompletedReflection();
     sub.textContent = bonus > 0
       ? (lineCount > bonus ? `條線很多，加碼最高 ${bonus} 顆` : '顆橡實已加進今天')
       : '今天沒有連線，明天再試';
@@ -1391,8 +1554,10 @@
     const sub = document.getElementById('bingo-sub');
     const num = document.getElementById('bingo-bonus-num');
     const resultSub = document.getElementById('bingo-result-sub');
+    const reflectionBtn = document.getElementById('btn-bingo-reflection');
     document.getElementById('bingo-lines').innerHTML = '';
     result.hidden = true;
+    if (reflectionBtn) reflectionBtn.hidden = true;
 
     if (saved) {
       stopBingoSpin();
@@ -1412,6 +1577,7 @@
       btn.disabled = true;
       btn.textContent = '今天已加碼';
       result.hidden = false;
+      if (reflectionBtn) reflectionBtn.hidden = hasCompletedReflection();
       num.textContent = saved.bonus || 0;
       resultSub.textContent = saved.bonus > 0
         ? ((saved.lines || 0) > (saved.bonus || 0) ? `條線很多，加碼最高 ${saved.bonus || 0} 顆` : '顆橡實已加進今天')
@@ -2605,6 +2771,7 @@
     }).join('');
 
     renderCalendar();
+    renderStickerCollection();
 
     const list = document.getElementById('mine-redeemed-list');
     const items = (state.redeemed || []);
@@ -2627,6 +2794,20 @@
         </div>
       `).join('');
     }
+  }
+  function renderStickerCollection() {
+    const list = document.getElementById('mine-sticker-list');
+    if (!list || !reflectionRules) return;
+    const stickers = reflectionRules.collectedStickers(state.dailyReflections || {});
+    if (!stickers.length) {
+      list.innerHTML = '<div class="empty">還沒有貼紙～<br>完成今天小回顧就會收進來。</div>';
+      return;
+    }
+    list.innerHTML = `
+      <div class="sticker-grid">
+        ${stickers.slice(-24).reverse().map(item => stickerCardHtml(item)).join('')}
+      </div>
+    `;
   }
   function formatDate(key) {
     const [y, m, d] = key.split('-');
@@ -2962,6 +3143,11 @@
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
   document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#btn-open-reflection,#btn-bingo-reflection')) {
+      openDailyReflectionModal();
+    }
+  });
   window.addEventListener('focus', checkDayRollover);
   window.addEventListener('pageshow', checkDayRollover);
   document.addEventListener('visibilitychange', () => {

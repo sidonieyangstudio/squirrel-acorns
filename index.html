@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=71">
+<link rel="stylesheet" href="styles.css?v=72">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -68,6 +68,7 @@
         今日小任務 <span class="count" id="habit-count"></span>
       </h2>
       <div id="habit-list"></div>
+      <div id="reflection-card"></div>
       <div class="add-btn-row">
         <button class="btn btn-ghost btn-block" id="btn-manage-habits">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -147,6 +148,7 @@
         <div class="bingo-result-label">今日加碼</div>
         <div class="bingo-result-num">+<span id="bingo-bonus-num">0</span></div>
         <div class="bingo-result-sub" id="bingo-result-sub">顆橡實</div>
+        <button class="btn btn-ghost btn-block reflection-bingo-btn" id="btn-bingo-reflection" hidden>今天小回顧</button>
       </div>
 
       <button class="btn btn-primary btn-block bingo-spin-btn" id="btn-bingo-spin">好手氣加碼</button>
@@ -215,6 +217,9 @@
 
       <h2 class="rewards-section-title" style="margin-top:22px;">這個月每天</h2>
       <div class="mine-calendar-card" id="mine-calendar"></div>
+
+      <h2 class="rewards-section-title" style="margin-top:22px;">我的貼紙</h2>
+      <div id="mine-sticker-list"></div>
 
       <h2 class="rewards-section-title" style="margin-top:22px;">最近兌換的獎勵</h2>
       <div id="mine-redeemed-list"></div>
@@ -330,7 +335,8 @@
 <script src="manage-sort.js?v=1"></script>
 <script src="after-school-alarm.js?v=3"></script>
 <script src="bingo-rules.js?v=3"></script>
-<script src="app.js?v=73"></script>
+<script src="reflection-rules.js?v=1"></script>
+<script src="app.js?v=74"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
