@@ -303,7 +303,8 @@ body.parent-mode .greet-row { padding-right: 0; }
   box-shadow: var(--shadow-sm);
 }
 .reflection-card.done {
-  background: linear-gradient(135deg, var(--white), rgba(164,174,146,0.16));
+  background: linear-gradient(135deg, var(--white), rgba(247,220,209,0.58));
+  border-color: rgba(218,132,79,0.18);
 }
 .reflection-card-mark {
   width: 44px;
@@ -348,6 +349,9 @@ body.parent-mode .greet-row { padding-right: 0; }
   font-size: 14px; font-weight: 600; margin: 0 0 12px;
   display: flex; align-items: center; gap: 8px;
   letter-spacing: 0.06em;
+}
+#reflection-card:not(:empty) + h2 {
+  margin-top: 18px;
 }
 .list-section h2 .count {
   margin-left: auto; font-size: 12px; color: var(--ink-muted); font-weight: 500;
