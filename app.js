@@ -140,6 +140,10 @@
     const child = Object.assign(structuredClone(DEFAULT_STATE), seed || {});
     child.id = String(child.id || `child-${h()}`);
     child.userName = String(child.userName || fallbackName || '小寶').trim();
+    if (!child.stickerTheme) child.stickerTheme = 'daily';
+    child.reflectionBlockers = reflectionRules
+      ? reflectionRules.normalizeBlockers(child.reflectionBlockers)
+      : (child.reflectionBlockers || []);
     delete child.parentPin;
     delete child.parentSecretQ;
     delete child.parentSecretA;
@@ -991,7 +995,17 @@
 
   function todayReflection() {
     state.dailyReflections = state.dailyReflections || {};
-    return state.dailyReflections[todayKey()] || null;
+    const today = todayKey();
+    const entry = state.dailyReflections[today] || null;
+    if (entry && entry.completed && (!entry.sticker || !entry.sticker.src) && reflectionRules) {
+      entry.sticker = reflectionRules.stickerForDate(today, {
+        childId: state.id,
+        theme: stickerThemeId()
+      });
+      state.dailyReflections[today] = entry;
+      save();
+    }
+    return entry;
   }
 
   function hasCompletedReflection() {
@@ -999,9 +1013,22 @@
     return !!(entry && entry.completed && entry.sticker);
   }
 
+  function reflectionBlockers() {
+    if (!reflectionRules) return [];
+    state.reflectionBlockers = reflectionRules.normalizeBlockers(state.reflectionBlockers);
+    return state.reflectionBlockers;
+  }
+
+  function stickerThemeId() {
+    const id = state.stickerTheme || 'daily';
+    return reflectionRules && reflectionRules.STICKER_THEMES[id] ? id : 'daily';
+  }
+
   function stickerIconHtml(sticker, size = 26) {
-    const color = sticker && sticker.color ? sticker.color : '#DA844F';
-    return iconSvg((sticker && sticker.icon) || 'ic-star', size, color);
+    if (sticker && sticker.src) {
+      return `<img src="${escAttr(sticker.src)}" alt="" width="${size}" height="${size}" loading="lazy">`;
+    }
+    return iconSvg('ic-star', size, '#DA844F');
   }
 
   function stickerCardHtml(item, compact = false) {
@@ -1057,7 +1084,11 @@
     };
     const sticker = (entry.completed && entry.sticker)
       ? entry.sticker
-      : reflectionRules.stickerForDate(todayKey(), state.id);
+      : reflectionRules.stickerForDate(todayKey(), {
+          childId: state.id,
+          theme: stickerThemeId()
+        });
+    const blockers = reflectionBlockers();
 
     openModal(`
       <h3 class="modal-title">今天小回顧</h3>
@@ -1077,7 +1108,7 @@
         <div class="reflection-question">
           <div class="reflection-question-title">今天哪件事卡住我了？</div>
           <div class="reflection-options">
-            ${reflectionRules.BLOCKERS.map(item => `
+            ${blockers.map(item => `
               <button type="button" class="reflection-option${selected.blocker === item.id ? ' selected' : ''}" data-reflection-blocker="${item.id}">
                 ${escHtml(item.label)}
               </button>
@@ -1118,7 +1149,11 @@
         state.dailyReflections || {},
         todayKey(),
         selected,
-        state.id
+        {
+          childId: state.id,
+          theme: stickerThemeId(),
+          blockers: reflectionBlockers()
+        }
       );
       save();
       renderReflectionCard();
@@ -2586,6 +2621,15 @@
     return `${child.points || 0} 顆橡實 · ${rewardCount} 筆兌換`;
   }
 
+  function blockerInputsHtml(blockers) {
+    return blockers.map((item, index) => `
+      <div class="field">
+        <label>卡住選項 ${index + 1}</label>
+        <input name="blocker" maxlength="12" value="${escAttr(item.label)}" placeholder="例：整理書包" />
+      </div>
+    `).join('');
+  }
+
   function makeChildFromCurrent(name, copySettings) {
     const child = makeChildProfile({ userName: name || '小朋友' }, name || '小朋友');
     if (copySettings) {
@@ -2603,6 +2647,9 @@
     child.timedRuns = {};
     child.afterSchoolLog = {};
     child.afterSchoolReminderLog = {};
+    child.dailyReflections = {};
+    child.stickerTheme = state.stickerTheme || 'daily';
+    child.reflectionBlockers = structuredClone(reflectionBlockers());
     return child;
   }
 
@@ -2647,6 +2694,25 @@
       <p class="modal-sub">每個孩子各自有任務、橡實、獎勵、放學路線和紀錄。切換後會留在家長模式，點右上鎖頭才上鎖。</p>
       <div class="child-profile-list">${rows}</div>
       <hr style="margin: 20px 0 16px; border: 0; border-top: 1px solid var(--hairline);">
+      <form id="reflection-settings-form">
+        <h4 class="settings-subtitle">每日小回顧</h4>
+        <div class="field">
+          <label>貼紙主題</label>
+          <select name="stickerTheme">
+            ${Object.values(reflectionRules.STICKER_THEMES).map(theme => `
+              <option value="${escAttr(theme.id)}" ${stickerThemeId() === theme.id ? 'selected' : ''}>${escHtml(theme.label)}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="reflection-settings-blockers">
+          ${blockerInputsHtml(reflectionBlockers())}
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-reset-reflection-settings>恢復預設</button>
+          <button type="submit" class="btn btn-primary">儲存回顧設定</button>
+        </div>
+      </form>
+      <hr style="margin: 20px 0 16px; border: 0; border-top: 1px solid var(--hairline);">
       <form id="new-child-form">
         <div class="field">
           <label>新增孩子</label>
@@ -2664,6 +2730,27 @@
     `);
     const root = document.getElementById('modal');
     root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('#reflection-settings-form').onsubmit = (e) => {
+      e.preventDefault();
+      const labels = Array.from(e.target.querySelectorAll('input[name="blocker"]')).map(input => input.value.trim());
+      state.stickerTheme = e.target.stickerTheme.value;
+      state.reflectionBlockers = reflectionRules.normalizeBlockers(labels.map((label, index) => ({
+        id: (state.reflectionBlockers && state.reflectionBlockers[index] && state.reflectionBlockers[index].id) || '',
+        label
+      })));
+      save();
+      openChildProfilesModal();
+      refreshCurrentScreen();
+      toast('小回顧設定已更新 ★');
+    };
+    root.querySelector('[data-reset-reflection-settings]').onclick = () => {
+      state.stickerTheme = 'daily';
+      state.reflectionBlockers = reflectionRules.normalizeBlockers(reflectionRules.DEFAULT_BLOCKERS);
+      save();
+      openChildProfilesModal();
+      refreshCurrentScreen();
+      toast('已恢復小回顧預設 ★');
+    };
     root.querySelectorAll('[data-switch-child]').forEach(btn => {
       btn.onclick = () => switchChildProfile(btn.dataset.switchChild);
     });

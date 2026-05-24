@@ -11,32 +11,59 @@
   'use strict';
 
   const MOODS = [
-    { id: 'proud', label: '自豪', face: ':D' },
-    { id: 'smile', label: '微笑', face: ':)' },
-    { id: 'unsatisfied', label: '不滿意', face: ':|' }
+    { id: 'proud', label: '自豪', face: 'ᕙ( •̀ ᗜ •́ )ᕗ' },
+    { id: 'smile', label: '微笑', face: '(˶ᵔ ᵕ ᵔ˶)' },
+    { id: 'unsatisfied', label: '不滿意', face: '(｡•́︿•̀｡)' }
   ];
 
-  const BLOCKERS = [
+  const DEFAULT_BLOCKERS = [
     { id: 'homework', label: '寫功課' },
     { id: 'bath', label: '洗澡' },
     { id: 'toys', label: '收起玩具' },
     { id: 'other', label: '其他' }
   ];
 
-  const STICKERS = [
-    { id: 'acorn', label: '橡實', icon: 'ic-squirrel', color: '#DA844F' },
-    { id: 'star', label: '星星', icon: 'ic-star', color: '#EBB95E' },
-    { id: 'rainbow', label: '彩虹', icon: 'ic-sparkles', color: '#95B8C8' },
-    { id: 'heart', label: '愛心', icon: 'ic-heart', color: '#D97973' },
-    { id: 'crown', label: '皇冠', icon: 'ic-queen', color: '#B99A5B' },
-    { id: 'rocket', label: '火箭', icon: 'ic-rocket', color: '#8C9EC6' },
-    { id: 'book', label: '書本', icon: 'ic-bookopen', color: '#9A8F72' },
-    { id: 'music', label: '音符', icon: 'ic-piano', color: '#A989B7' },
-    { id: 'paint', label: '畫筆', icon: 'ic-palette', color: '#D98D68' },
-    { id: 'bag', label: '背包', icon: 'ic-backpack', color: '#7EA083' },
-    { id: 'moon', label: '月亮', icon: 'ic-sparkles', color: '#7F8BAA' },
-    { id: 'trophy', label: '獎盃', icon: 'ic-gift', color: '#CFA24A' }
+  const DAILY_STICKERS = [
+    '1F308', '1F33A', '1F344', '1F347', '1F349', '1F34A',
+    '1F34E', '1F352', '1F353', '1F361', '1F3A1', '1F3AA',
+    '1F41E', '1F420', '1F422', '1F427', '1F433',
+    '1F43B-200D-2744-FE0F', '1F99C', '1F9AB', '1F9C1',
+    '1FA85', '1FAA9', '2603'
   ];
+
+  const VEHICLE_STICKERS = [
+    '1F680', '1F681', '1F682', '1F683', '1F688', '1F68E',
+    '1F691', '1F692', '1F693', '1F695', '1F69C', '1F69E',
+    '1F6E9', '1F6FB'
+  ];
+
+  const STICKER_THEMES = {
+    daily: {
+      id: 'daily',
+      label: '可愛日常',
+      stickers: DAILY_STICKERS.map(code => makeSticker('daily', code))
+    },
+    vehicle: {
+      id: 'vehicle',
+      label: '交通工具',
+      stickers: VEHICLE_STICKERS.map(code => makeSticker('vehicle', code))
+    }
+  };
+  STICKER_THEMES.mixed = {
+    id: 'mixed',
+    label: '全部混合',
+    stickers: STICKER_THEMES.daily.stickers.concat(STICKER_THEMES.vehicle.stickers)
+  };
+
+  function makeSticker(theme, code) {
+    return {
+      id: `${theme}-${code}`,
+      code,
+      label: code,
+      theme,
+      src: `assets/stickers/${theme}/${code}.svg`
+    };
+  }
 
   function hashString(input) {
     return String(input || '').split('').reduce((hash, char) => {
@@ -44,23 +71,52 @@
     }, 0);
   }
 
-  function stickerForDate(dateKey, childId) {
-    const hash = Math.abs(hashString(`${dateKey}:${childId || 'child'}`));
-    return STICKERS[hash % STICKERS.length];
+  function stickerPoolForTheme(theme) {
+    return (STICKER_THEMES[theme] || STICKER_THEMES.daily).stickers;
+  }
+
+  function stickerForDate(dateKey, options) {
+    const opts = typeof options === 'string' ? { childId: options } : (options || {});
+    const theme = opts.theme || 'daily';
+    const pool = stickerPoolForTheme(theme);
+    const hash = Math.abs(hashString(`${dateKey}:${opts.childId || 'child'}:${theme}`));
+    return pool[hash % pool.length];
+  }
+
+  function normalizeBlockers(blockers) {
+    const source = Array.isArray(blockers) ? blockers : [];
+    const seen = new Set();
+    const normalized = source
+      .map((item, index) => {
+        const label = String((item && item.label) || '').trim();
+        if (!label) return null;
+        const rawId = String((item && item.id) || '').trim();
+        const id = rawId || `blocker-${hashString(`${label}:${index}`).toString(36).replace('-', 'x')}`;
+        return { id, label };
+      })
+      .filter(Boolean)
+      .filter(item => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+    return normalized.length ? normalized : DEFAULT_BLOCKERS.map(item => Object.assign({}, item));
   }
 
   function validId(list, id) {
     return list.some(item => item.id === id);
   }
 
-  function saveDailyReflection(reflections, dateKey, input, childId) {
+  function saveDailyReflection(reflections, dateKey, input, options) {
+    const opts = typeof options === 'string' ? { childId: options } : (options || {});
+    const blockers = normalizeBlockers(opts.blockers || DEFAULT_BLOCKERS);
     const next = Object.assign({}, reflections || {});
     const previous = next[dateKey] || {};
     const mood = validId(MOODS, input && input.mood) ? input.mood : '';
-    const blocker = validId(BLOCKERS, input && input.blocker) ? input.blocker : '';
+    const blocker = validId(blockers, input && input.blocker) ? input.blocker : '';
     const completed = !!(mood && blocker);
     const sticker = completed
-      ? (previous.sticker || stickerForDate(dateKey, childId))
+      ? (previous.sticker || stickerForDate(dateKey, opts))
       : null;
 
     next[dateKey] = {
@@ -82,8 +138,11 @@
 
   return {
     MOODS,
-    BLOCKERS,
-    STICKERS,
+    DEFAULT_BLOCKERS,
+    BLOCKERS: DEFAULT_BLOCKERS,
+    STICKER_THEMES,
+    stickerPoolForTheme,
+    normalizeBlockers,
     stickerForDate,
     saveDailyReflection,
     collectedStickers
