@@ -68,7 +68,41 @@ test('sixteen-cell bingo shows all sixteen completed tasks but caps the bonus', 
   assert.equal(calculateBingoBonus(lines, cfg), 5);
 });
 
-test('sixteen-cell bingo fills missing tasks with empty spaces instead of free spaces', () => {
+test('bingo adds one free space after completed tasks when twelve or fewer are done', () => {
+  const nineHabits = Array.from({ length: 14 }, (_, index) => habit(`n${index + 1}`));
+  const nineLog = completed(nineHabits.slice(0, 8).map(item => item.id));
+  const nineCells = buildBingoCells({ habits: nineHabits, log: nineLog, rng: createBingoRng(8) });
+
+  assert.equal(nineCells.length, 9);
+  assert.equal(nineCells.filter(cell => cell.done && !cell.free).length, 8);
+  assert.equal(nineCells.filter(cell => cell.free).length, 1);
+
+  const sixteenHabits = Array.from({ length: 14 }, (_, index) => habit(`s${index + 1}`));
+  const sixteenLog = completed(sixteenHabits.slice(0, 12).map(item => item.id));
+  const sixteenCells = buildBingoCells({ habits: sixteenHabits, log: sixteenLog, rng: createBingoRng(12) });
+
+  assert.equal(sixteenCells.length, 16);
+  assert.equal(sixteenCells.filter(cell => cell.done && !cell.free).length, 12);
+  assert.equal(sixteenCells.filter(cell => cell.free).length, 1);
+});
+
+test('bingo does not replace completed tasks with a free space', () => {
+  const nineHabits = Array.from({ length: 9 }, (_, index) => habit(`n${index + 1}`));
+  const nineLog = completed(nineHabits.map(item => item.id));
+  const nineCells = buildBingoCells({ habits: nineHabits, log: nineLog, rng: createBingoRng(9) });
+
+  assert.equal(nineCells.filter(cell => cell.done && !cell.free).length, 9);
+  assert.equal(nineCells.filter(cell => cell.free).length, 0);
+
+  const sixteenHabits = Array.from({ length: 16 }, (_, index) => habit(`s${index + 1}`));
+  const sixteenLog = completed(sixteenHabits.slice(0, 13).map(item => item.id));
+  const sixteenCells = buildBingoCells({ habits: sixteenHabits, log: sixteenLog, rng: createBingoRng(13) });
+
+  assert.equal(sixteenCells.filter(cell => cell.done && !cell.free).length, 13);
+  assert.equal(sixteenCells.filter(cell => cell.free).length, 0);
+});
+
+test('sixteen-cell bingo fills remaining slots with empty spaces after the free space', () => {
   const habits = Array.from({ length: 14 }, (_, index) => habit(`h${index + 1}`));
   const log = completed(habits.slice(0, 10).map(item => item.id));
   const cfg = bingoGridConfig(dailyCompletionCount(habits, log));
@@ -77,8 +111,8 @@ test('sixteen-cell bingo fills missing tasks with empty spaces instead of free s
 
   assert.equal(cfg.total, 16);
   assert.equal(cells.filter(cell => cell.done && !cell.free).length, 10);
-  assert.equal(cells.filter(cell => cell.free).length, 0);
-  assert.equal(cells.filter(cell => !cell.done).length, 6);
+  assert.equal(cells.filter(cell => cell.free).length, 1);
+  assert.equal(cells.filter(cell => !cell.done).length, 5);
 });
 
 test('sixteen-cell bingo acknowledges completed tasks that cannot fit on the board', () => {

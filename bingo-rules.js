@@ -52,15 +52,17 @@
     });
 
     const selectedDone = shuffled(done, rng).slice(0, Math.min(done.length, cfg.total));
+    const useFree = done.length > 0 && done.length <= 12 && selectedDone.length < cfg.total;
     const selected = selectedDone.concat(
-      shuffled(undone, rng).slice(0, Math.max(0, cfg.total - selectedDone.length))
+      useFree ? [{ title: 'FREE', icon: 'ic-star', done: true, empty: false, free: true }] : [],
+      shuffled(undone, rng).slice(0, Math.max(0, cfg.total - selectedDone.length - (useFree ? 1 : 0)))
     );
     return shuffled(selected, rng);
   }
 
   function makeCells(habits, log, cfg, rng) {
     const habitsForBoard = pickBingoHabits(habits, log, cfg, rng);
-    const cells = habitsForBoard.slice(0, cfg.total).map(habit => ({
+    const cells = habitsForBoard.slice(0, cfg.total).map(habit => habit.free ? habit : ({
       habitId: habit.id,
       title: habit.title,
       icon: habit.icon,
@@ -68,17 +70,8 @@
       empty: false
     }));
 
-    const keepBlanks = cfg.total === 16;
-    let useFree = !keepBlanks;
     while (cells.length < cfg.total) {
-      if (keepBlanks) {
-        cells.push({ title: '橡實', done: false, empty: true, acorn: true });
-      } else if (useFree) {
-        cells.push({ title: 'FREE', icon: 'ic-star', done: true, empty: false, free: true });
-      } else {
-        cells.push({ title: '橡實', done: false, empty: true, acorn: true });
-      }
-      useFree = !useFree;
+      cells.push({ title: '橡實', done: false, empty: true, acorn: true });
     }
     return shuffled(cells, rng);
   }
