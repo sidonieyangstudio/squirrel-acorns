@@ -1064,6 +1064,18 @@
     `;
   }
 
+  function reflectionCollectedStickerHtml(entry) {
+    const sticker = entry.sticker || entry;
+    return `
+      <div class="reflection-collected-sticker">
+        <div class="reflection-collected-icon" style="--sticker-color:${escAttr(sticker.color || '#DA844F')}">
+          ${stickerIconHtml(sticker, 68)}
+        </div>
+        <div class="reflection-collected-copy">今天收集到的貼紙</div>
+      </div>
+    `;
+  }
+
   function stickerCollectionSlotHtml(slot) {
     const sticker = slot.sticker || {};
     return `
@@ -1203,7 +1215,7 @@
       <h3 class="modal-title">貼紙收好了</h3>
       <p class="modal-sub">明天也可以再送自己一張新的。</p>
       <div class="reflection-sticker-big">
-        ${stickerCardHtml(entry)}
+        ${reflectionCollectedStickerHtml(entry)}
       </div>
       <div class="modal-actions" style="margin-top:18px;">
         <button type="button" class="btn btn-primary" data-reflection-done>知道了</button>
