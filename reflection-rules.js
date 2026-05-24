@@ -11,7 +11,7 @@
   'use strict';
 
   const MOODS = [
-    { id: 'proud', label: '自豪', face: '٩(ˊᗜˋ*)و' },
+    { id: 'proud', label: '自豪', face: '٩(ˊᗜˋ)و' },
     { id: 'smile', label: '微笑', face: '(˶ᵔ ᵕ ᵔ˶)' },
     { id: 'unsatisfied', label: '不滿意', face: '(｡•́︿•̀｡)' }
   ];

@@ -17,7 +17,7 @@ test('mood choices use kaomoji faces', () => {
   assert.deepEqual(
     MOODS.map(item => [item.id, item.face]),
     [
-      ['proud', '٩(ˊᗜˋ*)و'],
+      ['proud', '٩(ˊᗜˋ)و'],
       ['smile', '(˶ᵔ ᵕ ᵔ˶)'],
       ['unsatisfied', '(｡•́︿•̀｡)']
     ]

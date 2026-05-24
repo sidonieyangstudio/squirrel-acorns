@@ -496,6 +496,9 @@
   function reflectionPickSfx() {
     jsfxrPlay(SFX_HABIT, 0.92, 0.28);
   }
+  function softTapSfx() {
+    jsfxrPlay(SFX_HABIT, 0.82, 0.18);
+  }
   function reflectionStickerSfx() {
     jsfxrPlay(SFX_REWARD, 1.18, 0.55);
     setTimeout(() => jsfxrPlay(SFX_HABIT, 1.45, 0.35), 90);
@@ -3251,12 +3254,16 @@
   document.getElementById('btn-after-school-alarm').onclick = toggleAfterSchoolAlarmSound;
   document.getElementById('after-school-alarm-dismiss').onclick = dismissAfterSchoolAlarm;
   document.getElementById('after-school-alarm-snooze').onclick = snoozeAfterSchoolAlarm;
-  document.getElementById('btn-open-after-school').onclick = () => goToScreen('after-school');
+  document.getElementById('btn-open-after-school').onclick = () => {
+    softTapSfx();
+    goToScreen('after-school');
+  };
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
   document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
   document.addEventListener('click', (e) => {
     if (e.target.closest('#btn-open-reflection,#btn-bingo-reflection')) {
+      softTapSfx();
       openDailyReflectionModal();
     }
   });
