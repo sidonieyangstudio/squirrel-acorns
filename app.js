@@ -1138,7 +1138,10 @@
           </div>
         </div>
         <div class="reflection-preview">
-          <div class="reflection-preview-label">今天的貼紙</div>
+          <div class="reflection-preview-copy">
+            <div class="reflection-preview-label">今天的貼紙</div>
+            <div class="reflection-preview-hint">貼紙主題可到家長模式的孩子檔案調整。</div>
+          </div>
           ${stickerCardHtml(sticker)}
         </div>
       </div>
