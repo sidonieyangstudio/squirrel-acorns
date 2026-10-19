@@ -3231,13 +3231,14 @@
 
         <h4>素材與授權</h4>
         <ul>
-          <li>松鼠角色與圖像：歐的樂星球 Sidonie Yang 版權所有。</li>
+          <li>松鼠插圖：<b>Freepik</b> 素材，依付費授權使用。</li>
+          <li>小圖示：<b>Lucide</b>（ISC 授權）、<b>Phosphor Icons</b>（MIT 授權）。</li>
           <li>貼紙圖案：<b>OpenMoji</b>（openmoji.org），採用 CC BY-SA 4.0 授權。</li>
           <li>字型：<b>Chiron GoRound TC</b>，採用 SIL Open Font License 1.1 授權。</li>
         </ul>
 
         <h4>聯絡我們</h4>
-        <p>歐的樂星球 O's Fun Planet<br>sidonie.ca</p>
+        <p>有問題或建議，歡迎到歐的樂星球留言板找我們：<br>sidonie.ca/message-board</p>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-primary" data-cancel>知道了</button>
