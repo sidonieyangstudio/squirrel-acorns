@@ -2122,3 +2122,12 @@ body.child-mode [data-delete-reward] { display: none !important; }
 .backup-zone-title { font-size: 13px; font-weight: 800; color: var(--ink); letter-spacing: 0.05em; margin-bottom: 6px; }
 .backup-zone-sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; line-height: 1.5; }
 .backup-zone-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+/* 關於・隱私・授權 */
+.about-link { display: block; margin: 18px auto 0; padding: 8px 12px; background: none; border: 0; font-size: 12px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+#screen-mine .about-link { margin: 28px auto 8px; }
+.about-body { font-size: 13px; line-height: 1.7; color: var(--ink); text-align: left; }
+.about-body p { margin: 0 0 12px; }
+.about-body h4 { font-size: 13px; font-weight: 800; margin: 16px 0 6px; color: var(--ink); }
+.about-body ul { margin: 0 0 8px; padding-left: 18px; }
+.about-body li { margin-bottom: 4px; }

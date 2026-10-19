@@ -3214,6 +3214,37 @@
     saveAll();
     window.location.reload();
   }
+  function openAboutModal() {
+    openModal(`
+      <h3 class="modal-title">關於松鼠橡實</h3>
+      <div class="about-body">
+        <p>松鼠橡實是歐的樂星球做的親子任務集點工具。家長設定每天的小任務和獎勵，孩子在家長陪同下完成任務、收集橡實、換獎勵，讓放學後和睡前的流程更看得見。</p>
+
+        <h4>隱私說明</h4>
+        <ul>
+          <li>不需要建立帳號，不收集 email、電話或真實姓名。</li>
+          <li>沒有廣告，也沒有任何追蹤或分析工具。</li>
+          <li>孩子的暱稱、任務、點數、獎勵和紀錄，只存在這台裝置上，不會上傳到任何伺服器。我們也看不到這些資料。</li>
+          <li>「備份資料」產生的檔案，只會存到你自己選的地方。備份檔不含家長密碼。</li>
+          <li>刪除 App 或使用「清掉全部資料」後，資料就會消失。換手機前請先備份。</li>
+        </ul>
+
+        <h4>素材與授權</h4>
+        <ul>
+          <li>松鼠角色與圖像：歐的樂星球 Sidonie Yang 版權所有。</li>
+          <li>貼紙圖案：<b>OpenMoji</b>（openmoji.org），採用 CC BY-SA 4.0 授權。</li>
+          <li>字型：<b>Chiron GoRound TC</b>，採用 SIL Open Font License 1.1 授權。</li>
+        </ul>
+
+        <h4>聯絡我們</h4>
+        <p>歐的樂星球 O's Fun Planet<br>sidonie.ca</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-cancel>知道了</button>
+      </div>
+    `);
+    document.getElementById('modal').querySelector('[data-cancel]').onclick = closeModal;
+  }
   function openChangePinModal() {
     openModal(`
       <h3 class="modal-title">改家長設定</h3>
@@ -3245,6 +3276,7 @@
         </div>
         <input type="file" accept="application/json,.json" data-backup-file hidden>
       </div>
+      <button type="button" class="about-link" data-about>關於松鼠橡實・隱私・授權</button>
       <hr style="margin: 26px 0 16px; border: 0; border-top: 1.5px dashed rgba(219,109,102,0.4);">
       <div class="danger-zone">
         <div class="danger-zone-title">⚠ 危險區（不可復原）</div>
@@ -3268,6 +3300,7 @@
       closeModal();
       toast('家長設定已更新 ★');
     };
+    root.querySelector('[data-about]').onclick = openAboutModal;
     root.querySelector('[data-backup-export]').onclick = exportBackup;
     const fileInput = root.querySelector('[data-backup-file]');
     root.querySelector('[data-backup-import]').onclick = () => fileInput.click();
@@ -3319,6 +3352,7 @@
     }, true);
   })();
   document.getElementById('parent-toggle').onclick = openParentModal;
+  document.getElementById('btn-about').onclick = openAboutModal;
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
   document.getElementById('btn-go-today').onclick     = () => goToScreen('today');
