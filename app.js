@@ -3169,6 +3169,51 @@
     setParentMode(true);
     toast('密碼已重置 · 進入家長模式 ★');
   }
+  async function exportBackup() {
+    const now = new Date();
+    const text = JSON.stringify(window.SquirrelBackup.buildBackup(appState, now), null, 2);
+    const name = window.SquirrelBackup.backupFileName(now);
+    const file = new File([text], name, { type: 'application/json' });
+    // 手機（含 iOS App）優先用分享選單，可以存到「檔案」或傳給自己；不支援時改成直接下載
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: name });
+        toast('備份完成 ★');
+      } catch (e) {
+        if (e && e.name !== 'AbortError') toast('備份沒有成功，請再試一次');
+      }
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('備份檔已下載 ★');
+  }
+  async function importBackup(file) {
+    let text = '';
+    try {
+      text = await file.text();
+    } catch (e) {
+      alert('檔案讀不出來，請重新選擇。');
+      return;
+    }
+    const result = window.SquirrelBackup.parseBackup(text);
+    if (!result.ok) {
+      alert(result.error);
+      return;
+    }
+    const when = result.exportedAt ? new Date(result.exportedAt).toLocaleString('zh-TW') : '不明時間';
+    if (!confirm(`要用這份備份還原嗎？\n\n備份時間：${when}\n孩子人數：${result.childCount} 位\n\n現在這台裝置上的任務、點數、獎勵和紀錄會被備份內容取代。家長密碼維持不變。`)) return;
+    appState.children = result.data.children;
+    appState.activeChildId = result.data.activeChildId;
+    saveAll();
+    window.location.reload();
+  }
   function openChangePinModal() {
     openModal(`
       <h3 class="modal-title">改家長設定</h3>
@@ -3191,6 +3236,15 @@
           <button type="submit" class="btn btn-primary">儲存</button>
         </div>
       </form>
+      <div class="backup-zone">
+        <div class="backup-zone-title">資料備份</div>
+        <p class="backup-zone-sub">資料只存在這台裝置。換手機或刪掉 App 前，先備份一份存到檔案或傳給自己。備份不含家長密碼。</p>
+        <div class="backup-zone-actions">
+          <button type="button" class="btn btn-ghost" data-backup-export>備份資料</button>
+          <button type="button" class="btn btn-ghost" data-backup-import>從備份還原</button>
+        </div>
+        <input type="file" accept="application/json,.json" data-backup-file hidden>
+      </div>
       <hr style="margin: 26px 0 16px; border: 0; border-top: 1.5px dashed rgba(219,109,102,0.4);">
       <div class="danger-zone">
         <div class="danger-zone-title">⚠ 危險區（不可復原）</div>
@@ -3213,6 +3267,14 @@
       saveAll();
       closeModal();
       toast('家長設定已更新 ★');
+    };
+    root.querySelector('[data-backup-export]').onclick = exportBackup;
+    const fileInput = root.querySelector('[data-backup-file]');
+    root.querySelector('[data-backup-import]').onclick = () => fileInput.click();
+    fileInput.onchange = () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = '';
+      if (file) importBackup(file);
     };
     root.querySelector('[data-clear-all]').onclick = () => {
       if (!confirm('真的要清掉全部資料嗎？\n\n習慣、獎勵、點數、紀錄、家長密碼會全部歸零，無法復原。')) return;

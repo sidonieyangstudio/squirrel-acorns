@@ -1,10 +1,11 @@
 // PWA service worker — network-first（線上永遠抓最新，離線回 cache）
-const CACHE = 'squirrel-points-v20';
+const CACHE = 'squirrel-points-v21';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './daily-reset.js',
+  './backup-rules.js',
   './manage-sort.js',
   './after-school-alarm.js',
   './bingo-rules.js',

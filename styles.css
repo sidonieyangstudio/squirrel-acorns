@@ -2116,3 +2116,9 @@ body.child-mode [data-delete-reward] { display: none !important; }
 .row { display: flex; align-items: center; gap: 8px; }
 .row.sb { justify-content: space-between; }
 .spacer { flex: 1; }
+
+/* 家長設定 · 資料備份 */
+.backup-zone { margin-top: 22px; text-align: center; padding: 14px; border: 1.5px dashed rgba(218,132,79,0.45); border-radius: 14px; background: rgba(218,132,79,0.06); }
+.backup-zone-title { font-size: 13px; font-weight: 800; color: var(--ink); letter-spacing: 0.05em; margin-bottom: 6px; }
+.backup-zone-sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; line-height: 1.5; }
+.backup-zone-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
