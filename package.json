@@ -1,0 +1,19 @@
+{
+  "name": "squirrel-acorns",
+  "version": "1.0.0",
+  "private": true,
+  "description": "歐的樂星球｜松鼠橡實 親子任務集點工具（網頁版 + iOS App 版）",
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "build:app": "node scripts/build-app.mjs",
+    "check:app": "node scripts/check-app.mjs",
+    "app": "npm test && npm run build:app && npm run check:app"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}
