@@ -3275,7 +3275,22 @@
   }
   // 需要家長確認的動作：家長模式中直接做；有設密碼就先輸入；沒設密碼就直接做
   function requireParentPin(onOk) {
-    if (parentMode || !appState.parentPin) { onOk(); return; }
+    if (parentMode) { onOk(); return; }
+    if (!appState.parentPin) {
+      // 沒設家長密碼：先確認一次，避免孩子誤按，並提醒可以設密碼
+      openModal(`
+        <h3 class="modal-title">要備份資料嗎？</h3>
+        <p class="modal-sub">這是給家長用的功能。還沒設定家長密碼，建議點右上角鎖頭設一組，孩子就不會誤按。</p>
+        <div class="modal-actions" style="margin-top:18px;">
+          <button type="button" class="btn" data-cancel>取消</button>
+          <button type="button" class="btn btn-primary" data-go>繼續備份</button>
+        </div>
+      `);
+      const box = document.getElementById('modal');
+      box.querySelector('[data-cancel]').onclick = closeModal;
+      box.querySelector('[data-go]').onclick = () => { closeModal(); onOk(); };
+      return;
+    }
     openModal(`
       <h3 class="modal-title">請家長輸入密碼</h3>
       <p class="modal-sub">確認是家長再繼續</p>
