@@ -1298,9 +1298,11 @@
     if (!sub || !reflectionRules) return;
     if (!sub.dataset.defaultText) sub.dataset.defaultText = sub.textContent;
     const birthday = reflectionRules.isBirthdayToday(todayKey(), state.birthday);
-    sub.textContent = birthday
-      ? `${childName()}，生日快樂！松鼠送你生日限定貼紙`
-      : sub.dataset.defaultText;
+    if (birthday) {
+      sub.innerHTML = `${escHtml(childName())}，生日快樂！<br>松鼠送你生日限定貼紙`;
+    } else {
+      sub.textContent = sub.dataset.defaultText;
+    }
     sub.classList.toggle('birthday', birthday);
   }
   function renderToday() {
