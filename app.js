@@ -374,6 +374,31 @@
   function hopRewardsSquirrel() {
     hopSquirrel(document.querySelector('#screen-rewards .points-card-squirrel.cheer'));
   }
+  // 首頁松鼠：勾完任務歡呼一下，全部做完跳三下
+  function homeSquirrelImg() { return document.querySelector('.squirrel-wrap img'); }
+  function playSquirrelMove(img, cls, ms) {
+    if (!img) return;
+    img.classList.remove('sq-cheer', 'sq-cheer-big', 'sq-idle-wiggle', 'sq-idle-peek');
+    void img.offsetWidth;
+    img.classList.add(cls);
+    clearTimeout(img._sqTimer);
+    img._sqTimer = setTimeout(() => img.classList.remove(cls), ms);
+  }
+  function cheerHomeSquirrel(allDone) {
+    playSquirrelMove(homeSquirrelImg(), allDone ? 'sq-cheer-big' : 'sq-cheer', allDone ? 2700 : 1000);
+  }
+  // 首頁松鼠偶爾自己動一下，讓畫面感覺是活的
+  (function startIdleSquirrel() {
+    const moves = [['sq-idle-wiggle', 1200], ['sq-idle-peek', 1400]];
+    setInterval(() => {
+      const img = homeSquirrelImg();
+      if (!img || document.hidden || document.getElementById('screen-today').hidden) return;
+      if (img.classList.contains('sq-cheer') || img.classList.contains('sq-cheer-big')) return;
+      if (Math.random() < 0.45) return;
+      const [cls, ms] = moves[Math.floor(Math.random() * moves.length)];
+      playSquirrelMove(img, cls, ms);
+    }, 5000);
+  })();
   function hopSquirrel(img) {
     if (!img) return;
     img.classList.remove('hop');
@@ -1987,6 +2012,8 @@
       // 2. 顏色改完 → 飛 N 顆橡實 + 叮 N 聲 + 數字跳
       const n = Math.max(1, earnedPoints);
       ding(n);
+      const allDone = state.habits.length > 0 && state.habits.every(h => isLogDone(log[h.id]));
+      cheerHomeSquirrel(allDone);
       const dockEl = document.querySelector('.dock-label svg');
       flyAcorn(sourceEl, dockEl, n);
       const after = before + earnedPoints;

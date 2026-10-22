@@ -230,7 +230,7 @@ body.parent-mode .greet-row { padding-right: 0; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: url("assets/speach_bubble_home.svg") center / contain no-repeat;
+  background: url("assets/speach_bubble_home.svg?v=2") center / contain no-repeat;
 }
 @keyframes breathe {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
@@ -996,6 +996,28 @@ body.parent-mode .greet-row { padding-right: 0; }
 .unlock-squirrel-circle img.hop {
   /* 領獎畫面跳兩下，比獎勵小店更熱鬧 */
   animation: cheer-hop 0.9s cubic-bezier(.3,1.3,.5,1) 2;
+}
+/* 首頁松鼠動作：勾任務歡呼、全部完成跳三下、閒置時偶爾動一下 */
+.squirrel-wrap img.sq-cheer { animation: cheer-hop 1s cubic-bezier(.3,1.3,.5,1) 1; }
+.squirrel-wrap img.sq-cheer-big { animation: cheer-hop 0.9s cubic-bezier(.3,1.3,.5,1) 3; }
+.squirrel-wrap img.sq-idle-wiggle { animation: sq-wiggle 1.2s ease-in-out 1; }
+.squirrel-wrap img.sq-idle-peek { animation: sq-peek 1.4s ease-in-out 1; }
+@keyframes sq-wiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-6deg); }
+  40% { transform: rotate(5deg); }
+  60% { transform: rotate(-3deg); }
+  80% { transform: rotate(2deg); }
+}
+@keyframes sq-peek {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(3px) scale(1.04, .95); }
+  55% { transform: translateY(-12px) scale(.97, 1.04); }
+  75% { transform: translateY(0) scale(1.02, .98); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .squirrel-wrap img.sq-cheer, .squirrel-wrap img.sq-cheer-big,
+  .squirrel-wrap img.sq-idle-wiggle, .squirrel-wrap img.sq-idle-peek { animation: none; }
 }
 @keyframes cheer-hop {
   0%   { transform: translateY(0) scale(1, 1) rotate(0); }
