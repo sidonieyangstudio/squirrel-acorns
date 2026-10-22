@@ -3079,29 +3079,67 @@
       `).join('');
     }
   }
+  let openStickerBookId = null;
+  function stickerPeriodText(book) {
+    const fmt = md => `${parseInt(md.slice(0, 2), 10)}/${parseInt(md.slice(3), 10)}`;
+    if (book.kind === 'season') return `每年 ${fmt(book.start)} 到 ${fmt(book.end)}`;
+    if (book.kind === 'birthday') {
+      return state.birthday
+        ? `每年生日 ${state.birthday.month}/${state.birthday.day} 前後各 3 天`
+        : '每年生日前後各 3 天';
+    }
+    return '完成小回顧就能抽一張';
+  }
   function renderStickerCollection() {
     const list = document.getElementById('mine-sticker-list');
     if (!list || !reflectionRules) return;
-    const board = reflectionRules.stickerCollectionBoard(state.dailyReflections || {}, stickerThemeId());
-    const collectedCount = board.filter(slot => slot.collected).length;
+    const shelf = reflectionRules.stickerBookshelf(state.dailyReflections || {}, todayKey(), state.birthday);
+    const book = shelf.find(item => item.id === openStickerBookId);
+    if (book) {
+      list.innerHTML = `
+        <div class="sticker-book-open">
+          <button type="button" class="sticker-book-back" data-book-back>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            回書架
+          </button>
+          <div class="sticker-book-title">
+            <span>${escHtml(book.label)}${book.active ? '<em class="sticker-book-tag live">進行中</em>' : ''}${book.full ? '<em class="sticker-book-tag full">集滿了</em>' : ''}</span>
+            <span class="sticker-book-count">${book.collectedCount}/${book.total}</span>
+          </div>
+          <div class="sticker-book-period">${escHtml(stickerPeriodText(book))}</div>
+          <div class="sticker-album-grid">
+            ${book.slots.map(slot => stickerCollectionSlotHtml(Object.assign({ silhouette: true }, slot))).join('')}
+          </div>
+        </div>
+      `;
+      list.querySelector('[data-book-back]').onclick = () => {
+        openStickerBookId = null;
+        renderStickerCollection();
+        list.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      };
+      return;
+    }
+    openStickerBookId = null;
     list.innerHTML = `
-      <div class="sticker-album-head">
-        <span>${reflectionRules.STICKER_THEMES[stickerThemeId()].label}</span>
-        <span>${collectedCount}/${board.length}</span>
+      <div class="sticker-shelf">
+        ${shelf.map(item => `
+          <button type="button" class="sticker-book${item.active ? ' live' : ''}${item.full ? ' full' : ''}" data-open-book="${escAttr(item.id)}">
+            <span class="sticker-book-cover${item.collectedCount ? '' : ' silhouette'}">${stickerIconHtml(item.cover, 48)}</span>
+            <span class="sticker-book-name">${escHtml(item.label)}</span>
+            <span class="sticker-book-progress">${item.collectedCount}/${item.total}</span>
+            ${item.active ? '<em class="sticker-book-tag live">進行中</em>' : ''}
+            ${item.full ? '<em class="sticker-book-tag full">集滿了</em>' : ''}
+          </button>
+        `).join('')}
       </div>
-      <div class="sticker-album-grid">
-        ${board.map(stickerCollectionSlotHtml).join('')}
-      </div>
-      ${reflectionRules.specialAlbums(state.dailyReflections || {}, todayKey(), state.birthday).map(album => `
-        <div class="sticker-album-head special">
-          <span>${escHtml(album.set.label)}限定${album.active ? '<em class="sticker-album-live">進行中</em>' : ''}</span>
-          <span>${album.slots.filter(slot => slot.collected).length}/${album.slots.length}</span>
-        </div>
-        <div class="sticker-album-grid">
-          ${album.slots.map(slot => stickerCollectionSlotHtml(Object.assign({ silhouette: true }, slot))).join('')}
-        </div>
-      `).join('')}
     `;
+    list.querySelectorAll('[data-open-book]').forEach(btn => {
+      btn.onclick = () => {
+        openStickerBookId = btn.dataset.openBook;
+        renderStickerCollection();
+        list.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      };
+    });
   }
   function formatDate(key) {
     const [y, m, d] = key.split('-');

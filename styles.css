@@ -2224,3 +2224,24 @@ body.on-welcome { overflow: hidden; }
 .festival-preview-head { display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px; font-size: 14px; font-weight: 800; color: var(--ink); }
 .festival-preview-head span { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
 .sticker-preview-cell img { width: 72%; height: 72%; object-fit: contain; }
+
+/* 我的貼紙 · 書架 */
+.sticker-shelf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sticker-book { position: relative; display: grid; justify-items: center; gap: 4px; padding: 14px 8px 12px; border-radius: 16px; border: 1.5px solid rgba(94,84,83,0.12); background: var(--white); box-shadow: var(--shadow-xs); font: inherit; color: var(--ink); cursor: pointer; text-align: center; }
+.sticker-book.live { border: 2px solid #DA844F; }
+.sticker-book-cover { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 14px; background: rgba(218,132,79,0.08); }
+.sticker-book-cover img { width: 48px; height: 48px; object-fit: contain; }
+.sticker-book-cover.silhouette img { filter: grayscale(1) brightness(0); opacity: 0.12; }
+.sticker-book-name { font-size: 14px; font-weight: 800; }
+.sticker-book-progress { font-size: 12px; font-weight: 700; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.sticker-book-tag { font-style: normal; display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; }
+.sticker-book > .sticker-book-tag { position: absolute; top: 8px; }
+.sticker-book > .sticker-book-tag.live { left: 8px; }
+.sticker-book > .sticker-book-tag.full { right: 8px; }
+.sticker-book-tag.live { background: #DA844F; color: #fff; }
+.sticker-book-tag.full { background: #F3D9A4; color: #7A5212; }
+.sticker-book-back { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 10px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 1.5px solid rgba(94,84,83,0.14); background: var(--white); font: inherit; font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.sticker-book-title { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 800; color: var(--ink); }
+.sticker-book-title .sticker-book-tag { margin-left: 6px; vertical-align: 2px; }
+.sticker-book-count { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.sticker-book-period { margin: 2px 0 12px; font-size: 12px; color: var(--ink-soft); }

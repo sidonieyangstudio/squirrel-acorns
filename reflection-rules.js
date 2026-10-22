@@ -135,25 +135,43 @@
     return seasonalSetForDate(dateKey);
   }
 
-  function specialAlbums(reflections, dateKey, birthday) {
+  // 貼紙書架：每組貼紙是一本。日常主題（可愛日常、交通工具）固定出現；
+  // 限定本子拿到第一張才上架。進行中的限定本子排最前面。
+  function stickerBookshelf(reflections, dateKey, birthday) {
     const collected = new Map();
     collectedStickers(reflections).forEach(item => {
       const id = item.sticker && item.sticker.id;
       if (id && !collected.has(id)) collected.set(id, item.dateKey);
     });
     const active = activeSpecialSet(dateKey, birthday);
-    // 只列出「現在正在進行」或「已經拿過至少一張」的限定組
-    return SPECIAL_SETS.concat([BIRTHDAY_SET])
-      .map(set => ({
-        set,
-        active: !!active && active.id === set.id,
-        slots: set.stickers.map(sticker => ({
-          sticker,
-          dateKey: collected.get(sticker.id) || '',
-          collected: collected.has(sticker.id)
-        }))
-      }))
-      .filter(album => album.active || album.slots.some(slot => slot.collected));
+    const makeBook = (set, kind) => {
+      const slots = set.stickers.map(sticker => ({
+        sticker,
+        dateKey: collected.get(sticker.id) || '',
+        collected: collected.has(sticker.id)
+      }));
+      const count = slots.filter(slot => slot.collected).length;
+      const firstGot = slots.find(slot => slot.collected);
+      return {
+        id: set.id,
+        label: set.label,
+        kind,
+        start: set.start || '',
+        end: set.end || '',
+        active: kind !== 'theme' && !!active && active.id === set.id,
+        collectedCount: count,
+        total: slots.length,
+        full: count === slots.length,
+        cover: (firstGot || slots[0]).sticker,
+        slots
+      };
+    };
+    const themeBooks = ['daily', 'vehicle'].map(id => makeBook(STICKER_THEMES[id], 'theme'));
+    const specialBooks = SPECIAL_SETS.map(set => makeBook(set, 'season'))
+      .concat([makeBook(BIRTHDAY_SET, 'birthday')])
+      .filter(book => book.collectedCount > 0);
+    return specialBooks.filter(book => book.active)
+      .concat(themeBooks, specialBooks.filter(book => !book.active));
   }
 
   function makeSticker(theme, code) {
@@ -265,7 +283,7 @@
     daysFromBirthday,
     isBirthdayToday,
     activeSpecialSet,
-    specialAlbums,
+    stickerBookshelf,
     stickerPoolForTheme,
     normalizeBlockers,
     stickerForDate,
