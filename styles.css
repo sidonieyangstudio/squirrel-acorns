@@ -215,8 +215,8 @@ body.parent-mode .greet-row { padding-right: 0; }
 .squirrel-wrap:active img { transform: translateY(2px) scale(.98); }
 .squirrel-bubble {
   position: absolute;
-  left: calc(50% + 16px);
-  top: 2px;
+  left: calc(50% + 40px);
+  top: -8px;
   width: 122px;
   height: 52px;
   color: var(--orange);
@@ -230,8 +230,7 @@ body.parent-mode .greet-row { padding-right: 0; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: url("assets/speach_bubbles30.svg") center / contain no-repeat;
-  transform: rotate(-4deg);
+  background: url("assets/speach_bubble_home.svg") center / contain no-repeat;
 }
 @keyframes breathe {
   0%, 100% { transform: translateY(0) rotate(-1deg); }
@@ -502,10 +501,11 @@ body.parent-mode .greet-row { padding-right: 0; }
   min-width: 0;
 }
 .bingo-hero img {
-  width: 190px;
-  height: 190px;
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
   flex-shrink: 0;
-  margin: -64px -20px -50px auto;
+  margin: -24px -6px -20px auto;
   filter: drop-shadow(0 8px 20px rgba(94,84,83,0.12));
   animation: breathe 3.2s ease-in-out infinite;
 }
