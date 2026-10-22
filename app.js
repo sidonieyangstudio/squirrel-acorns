@@ -367,6 +367,15 @@
     document.body.classList.toggle('on-unlock', id === 'screen-unlock');
     updateDockButtons(id);
     window.scrollTo(0, 0);
+    if (id === 'screen-rewards') hopRewardsSquirrel();
+  }
+  // 進獎勵小店時松鼠跳一下歡迎，跳完回到原本的呼吸動畫
+  function hopRewardsSquirrel() {
+    const img = document.querySelector('#screen-rewards .points-card-squirrel.cheer');
+    if (!img) return;
+    img.classList.remove('hop');
+    void img.offsetWidth;
+    img.classList.add('hop');
   }
   // 圖示備好給 dock 按鈕用
   const ICON_HOME = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/></svg>';
