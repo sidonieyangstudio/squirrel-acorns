@@ -230,7 +230,7 @@ body.parent-mode .greet-row { padding-right: 0; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: url("assets/speach_bubble_home.svg?v=2") center / contain no-repeat;
+  background: url("assets/speach_bubble_home.svg?v=3") center / contain no-repeat;
 }
 @keyframes breathe {
   0%, 100% { transform: translateY(0) rotate(-1deg); }

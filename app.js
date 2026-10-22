@@ -384,6 +384,20 @@
     clearTimeout(img._sqTimer);
     img._sqTimer = setTimeout(() => img.classList.remove(cls), ms);
   }
+  // 首頁松鼠表情跟著今天進度換：還沒開始揮手、未過半微笑、過半抱滿橡實、全部完成大笑
+  const SQUIRREL_MOOD_SRC = {
+    wave: 'assets/squirrel-wave.webp',
+    normal: 'assets/squirrel-normal.webp',
+    proud: 'assets/squirrel-proud.webp',
+    happy: 'assets/squirrel-happy.webp'
+  };
+  Object.values(SQUIRREL_MOOD_SRC).forEach(src => { const pre = new Image(); pre.src = src; });
+  function updateHomeSquirrelMood(done, total) {
+    const img = homeSquirrelImg();
+    if (!img) return;
+    const src = SQUIRREL_MOOD_SRC[window.SquirrelMood.squirrelMood(done, total)];
+    if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+  }
   function cheerHomeSquirrel(allDone) {
     playSquirrelMove(homeSquirrelImg(), allDone ? 'sq-cheer-big' : 'sq-cheer', allDone ? 2700 : 1000);
   }
@@ -1323,8 +1337,10 @@
       });
     }
 
+    const doneToday = visibleHabits.filter(h=>isLogDone(log[h.id])).length;
     document.getElementById('habit-count').textContent =
-      visibleHabits.length ? `${visibleHabits.filter(h=>isLogDone(log[h.id])).length}/${visibleHabits.length}` : '';
+      visibleHabits.length ? `${doneToday}/${visibleHabits.length}` : '';
+    updateHomeSquirrelMood(doneToday, visibleHabits.length);
 
     // dock
     const cur = todayPoints();
@@ -2012,7 +2028,8 @@
       // 2. 顏色改完 → 飛 N 顆橡實 + 叮 N 聲 + 數字跳
       const n = Math.max(1, earnedPoints);
       ding(n);
-      const allDone = state.habits.length > 0 && state.habits.every(h => isLogDone(log[h.id]));
+      const visibleNow = visibleHabitsToday();
+      const allDone = visibleNow.length > 0 && visibleNow.every(h => isLogDone(log[h.id]));
       cheerHomeSquirrel(allDone);
       const dockEl = document.querySelector('.dock-label svg');
       flyAcorn(sourceEl, dockEl, n);
