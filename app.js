@@ -242,6 +242,7 @@
   function saveAll() {
     localStorage.setItem(KEY, JSON.stringify(appState));
     rememberActiveChild();
+    scheduleNativeReminderSync();
   }
   function rememberActiveChild() {
     try {
@@ -1034,6 +1035,96 @@
       state.afterSchoolReminderLog[today] = daily;
       save();
     });
+  }
+
+  /* ---------- App 版手機通知（網頁版不會跑到這裡） ----------
+     App 關著也會跳的提醒。時間全部排在手機上，不用伺服器、不連網。
+     家長在放學設定按「儲存」時才第一次問能不能發通知；拒絕的話，App 內提醒照舊。 */
+  function nativeNotifications() {
+    if (!isNativeApp || !window.Capacitor || !window.Capacitor.Plugins) return null;
+    return window.Capacitor.Plugins.LocalNotifications || null;
+  }
+
+  // 資料一有變動（改時間、打勾完成、按知道了、換天）就重排；連續變動只排最後一次
+  function scheduleNativeReminderSync() {
+    if (!isNativeApp) return;
+    clearTimeout(scheduleNativeReminderSync.timer);
+    scheduleNativeReminderSync.timer = setTimeout(() => {
+      syncNativeReminders().catch(() => {});
+    }, 800);
+  }
+
+  function childReminderPlan(child) {
+    if (child === state) return afterSchoolPlan();
+    const raw = Array.isArray(child.afterSchoolPlan) ? child.afterSchoolPlan : [];
+    return DEFAULT_AFTER_SCHOOL_PLAN.map((defPhase, index) => {
+      const phase = raw.find(item => item && item.id === defPhase.id) || raw[index] || defPhase;
+      return {
+        id: defPhase.id,
+        title: renameToBoardGame(stripPhasePrefix(phase.title)) || defPhase.title,
+        reminderTime: normalizeClock(phase.reminderTime, defPhase.reminderTime || ''),
+        tasks: Array.isArray(phase.tasks) ? phase.tasks : defPhase.tasks
+      };
+    });
+  }
+
+  function nativeReminderText(child, phase, showName) {
+    const name = String(child.userName || '').trim();
+    const title = `${showName && name ? `${name}・` : ''}${stripPhasePrefix(phase.title)}提醒時間到了`;
+    const body = phase.id === 'ticket'
+      ? '先完成門票任務，再開心使用。'
+      : '先把晚上整理好，再舒服進入睡前時間。';
+    return { title, body };
+  }
+
+  async function syncNativeReminders() {
+    const notifications = nativeNotifications();
+    if (!notifications || !afterSchool || !afterSchoolAlarm) return;
+    const permission = await notifications.checkPermissions();
+    if (permission.display !== 'granted') return;
+
+    const today = todayKey();
+    const children = (appState.children || []).map(child => ({
+      child,
+      plan: childReminderPlan(child),
+      todayLog: ((child.afterSchoolLog || {})[today]) || {},
+      todayDaily: ((child.afterSchoolReminderLog || {})[today]) || {}
+    }));
+    const showName = children.length > 1;
+    const planned = afterSchoolAlarm.planNativeReminders(children, isAfterSchoolPhaseDone, new Date());
+
+    const pending = await notifications.getPending();
+    const ours = (pending.notifications || []).filter(item => afterSchoolAlarm.isNativeReminderId(item.id));
+    if (ours.length) await notifications.cancel({ notifications: ours.map(item => ({ id: item.id })) });
+    if (!planned.length) return;
+
+    await notifications.schedule({
+      notifications: planned.map(item => {
+        const entry = children[item.childIndex];
+        const phase = entry.plan.find(p => p.id === item.phaseId);
+        return {
+          id: item.id,
+          ...nativeReminderText(entry.child, phase, showName),
+          schedule: { at: new Date(item.at), allowWhileIdle: true }
+        };
+      })
+    });
+  }
+
+  // 只在家長儲存放學設定時呼叫：還沒問過才跳系統詢問；之前拒絕過就不再吵
+  async function askNativeReminderPermission() {
+    const notifications = nativeNotifications();
+    if (!notifications) return;
+    try {
+      let permission = await notifications.checkPermissions();
+      if (permission.display === 'prompt' || permission.display === 'prompt-with-rationale') {
+        permission = await notifications.requestPermissions();
+        toast(permission.display === 'granted'
+          ? '時間到了，手機會跳通知提醒'
+          : '沒開通知也沒關係，App 開著時一樣會提醒');
+      }
+      await syncNativeReminders();
+    } catch (e) {}
   }
 
   function afterSchoolTodayLog() {
@@ -2222,6 +2313,7 @@
       closeModal();
       renderAfterSchool();
       toast('放學設定已更新');
+      askNativeReminderPermission();
     };
   }
 
@@ -3781,7 +3873,10 @@
   window.addEventListener('focus', checkDayRollover);
   window.addEventListener('pageshow', checkDayRollover);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) checkDayRollover();
+    if (!document.hidden) {
+      checkDayRollover();
+      scheduleNativeReminderSync();
+    }
   });
   setInterval(checkDayRollover, 60 * 1000);
   const unlockScreen = document.getElementById('screen-unlock');
@@ -3801,6 +3896,7 @@
   /* ---------- init ---------- */
   dailyReset();
   refreshStreak();
+  scheduleNativeReminderSync();
   if (window.location.hash === '#after-school') {
     goToScreen('after-school');
   } else {

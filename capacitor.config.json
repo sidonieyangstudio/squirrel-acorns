@@ -1,5 +1,8 @@
 {
   "appId": "ca.sidonie.squirrelacorns",
   "appName": "松鼠橡實",
-  "webDir": "www"
+  "webDir": "www",
+  "ios": {
+    "backgroundColor": "#FFF3EE"
+  }
 }

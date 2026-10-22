@@ -47,5 +47,50 @@
     return !isReady;
   }
 
-  return { clockMinutes, isReminderDue, isSnoozeDue, nextAlarmPhase, resolveAlarmPhaseId, toggleAlarmReady };
+  // App 版手機通知：算出接下來要排哪些通知（時間全在手機上，不連網）。
+  // children：[{ plan, todayLog, todayDaily }]，每個孩子各自的放學設定與今天紀錄。
+  // 今天：已完成、已按「知道了」、已在 App 內響過、或時間已過，就不排；按過「等 5 分鐘」就排在那個時間。
+  // 之後幾天：照提醒時間排。iOS 最多同時排 64 則，所以只留最早的 limit 則。
+  const NATIVE_ID_BASE = 1000;
+
+  function planNativeReminders(children, isPhaseDone, now = new Date(), days = 14, limit = 60) {
+    const nowMs = now.getTime();
+    const items = [];
+    (children || []).forEach((child, childIndex) => {
+      const plan = (child && child.plan) || [];
+      const daily = (child && child.todayDaily) || {};
+      ['ticket', 'evening'].forEach((phaseId, phaseIndex) => {
+        const phase = plan.find(item => item && item.id === phaseId);
+        const minutes = phase ? clockMinutes(phase.reminderTime) : null;
+        if (minutes === null) return;
+        for (let day = 0; day < days; day++) {
+          const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, Math.floor(minutes / 60), minutes % 60).getTime();
+          let fireAt = at;
+          if (day === 0) {
+            if (isPhaseDone(phase, child.todayLog || {})) continue;
+            const entry = daily[phaseId];
+            if (entry === true || (entry && (entry.dismissed || entry.active))) continue;
+            if (entry && entry.snoozeUntil) fireAt = entry.snoozeUntil;
+          }
+          if (fireAt <= nowMs) continue;
+          items.push({
+            id: NATIVE_ID_BASE + childIndex * 100 + day * 2 + phaseIndex,
+            childIndex,
+            phaseId,
+            at: fireAt
+          });
+        }
+      });
+    });
+    return items.sort((a, b) => a.at - b.at).slice(0, limit);
+  }
+
+  function isNativeReminderId(id) {
+    return Number.isInteger(id) && id >= NATIVE_ID_BASE;
+  }
+
+  return {
+    clockMinutes, isReminderDue, isSnoozeDue, nextAlarmPhase, resolveAlarmPhaseId, toggleAlarmReady,
+    planNativeReminders, isNativeReminderId
+  };
 });
