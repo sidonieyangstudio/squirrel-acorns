@@ -3591,7 +3591,7 @@
       <h3 class="modal-title">松鼠橡實 App 版即將推出</h3>
       <div class="about-body">
         <p>我們正在把松鼠橡實做成 iPhone App，推出時這裡會通知你。</p>
-        <p>現在可以先做一件事：到「我的小本本」最下面按「備份資料」，存一份到「檔案」。以後改用 App 版，點數、任務和紀錄都能一起搬過去。</p>
+        <p>現在可以先做一件事：到「我的小本本」最下面按「備份資料」，存一份到「檔案」。以後改用 App 版，點數、任務和紀錄都能一起搬過去。換手機的時候，也能用這份備份把資料帶過去。</p>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn" data-cancel>知道了</button>
