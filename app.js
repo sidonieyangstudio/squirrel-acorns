@@ -3321,7 +3321,7 @@
   function setupAppTeaser() {
     if (isNativeApp) return;
     const sub = document.getElementById('mine-backup-sub');
-    if (sub) sub.textContent = '資料只存在這支手機。先備份一份存到「檔案」，以後換手機或改用 App 版都能搬過去。';
+    if (sub) sub.innerHTML = '資料只存在這支手機。<br>先備份一份存到「檔案」，以後換手機或改用 App 版都能搬過去。';
     const bar = document.getElementById('app-teaser');
     let dismissed = false;
     try { dismissed = localStorage.getItem(APP_TEASER_KEY) === '1'; } catch (e) {}
