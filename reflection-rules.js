@@ -55,6 +55,107 @@
     stickers: STICKER_THEMES.daily.stickers.concat(STICKER_THEMES.vehicle.stickers)
   };
 
+  // 節慶與生日限定貼紙：期間內小回顧抽到的是限定貼紙，拿到就永久留在收藏冊。
+  // 日期用每年固定區間（月-日，含頭尾），過年與中秋放寬區間，免得每年手動調整。
+  const SPECIAL_SETS = [
+    { id: 'newyear', label: '過年', start: '01-15', end: '02-28',
+      codes: ['1F9E7', '1F9E8', '1F386', '1F387', '1F3EE', '1F409', '1F95F', '1F38A'] },
+    { id: 'summer', label: '夏日放暑假', start: '07-01', end: '08-31',
+      codes: ['1F3D6', '1F30A', '1F41A', '1F366', '1F9A9', '1F31E', '1F3A3', '1F3D5'] },
+    { id: 'midautumn', label: '中秋與秋天', start: '09-01', end: '10-10',
+      codes: ['1F96E', '1F315', '1F407', '1F391', '1F375', '1F342', '1F341', '1F330'] },
+    { id: 'halloween', label: '萬聖節', start: '10-11', end: '10-31',
+      codes: ['1F383', '1F47B', '1F987', '1F578', '1F36C', '1F36D', '1F9D9', '1F9DB'] },
+    { id: 'christmas', label: '聖誕節', start: '12-01', end: '12-31',
+      codes: ['1F384', '1F385', '1F381', '2744', '1F98C', '1F514', '1F36A', '1F9E6'] }
+  ].map(set => Object.assign({}, set, { stickers: set.codes.map(code => makeSpecialSticker(set.id, code)) }));
+
+  const BIRTHDAY_SET = {
+    id: 'birthday',
+    label: '生日',
+    stickers: ['1F382', '1F388', '1F389', '1F380', '1F451', '1F973', '1F31F', '1F36B']
+      .map(code => makeSpecialSticker('birthday', code))
+  };
+  const BIRTHDAY_WEEK_RADIUS = 3; // 生日前後各 3 天，共 7 天
+
+  function makeSpecialSticker(setId, code) {
+    return {
+      id: `special-${setId}-${code}`,
+      code,
+      label: code,
+      theme: setId,
+      src: `assets/stickers/special/${setId}/${code}.svg`
+    };
+  }
+
+  function normalizeBirthday(birthday) {
+    const month = Number(birthday && birthday.month);
+    const day = Number(birthday && birthday.day);
+    if (!Number.isInteger(month) || !Number.isInteger(day) || month < 1 || month > 12 || day < 1) return null;
+    const maxDay = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+    if (day > maxDay) return null;
+    return { month, day };
+  }
+
+  function isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  }
+
+  function birthdayInYear(birthday, year) {
+    // 2/29 生日在平年改成 2/28 過
+    const day = birthday.month === 2 && birthday.day === 29 && !isLeapYear(year) ? 28 : birthday.day;
+    return Date.UTC(year, birthday.month - 1, day);
+  }
+
+  function daysFromBirthday(dateKey, birthday) {
+    const b = normalizeBirthday(birthday);
+    if (!b) return null;
+    const [y, m, d] = String(dateKey).split('-').map(Number);
+    const today = Date.UTC(y, m - 1, d);
+    let best = null;
+    for (const year of [y - 1, y, y + 1]) {
+      const diff = Math.round((today - birthdayInYear(b, year)) / 86400000);
+      if (best === null || Math.abs(diff) < Math.abs(best)) best = diff;
+    }
+    return best;
+  }
+
+  function isBirthdayToday(dateKey, birthday) {
+    return daysFromBirthday(dateKey, birthday) === 0;
+  }
+
+  function seasonalSetForDate(dateKey) {
+    const md = String(dateKey).slice(5, 10);
+    return SPECIAL_SETS.find(set => set.start <= md && md <= set.end) || null;
+  }
+
+  function activeSpecialSet(dateKey, birthday) {
+    const distance = daysFromBirthday(dateKey, birthday);
+    if (distance !== null && Math.abs(distance) <= BIRTHDAY_WEEK_RADIUS) return BIRTHDAY_SET;
+    return seasonalSetForDate(dateKey);
+  }
+
+  function specialAlbums(reflections, dateKey, birthday) {
+    const collected = new Map();
+    collectedStickers(reflections).forEach(item => {
+      const id = item.sticker && item.sticker.id;
+      if (id && !collected.has(id)) collected.set(id, item.dateKey);
+    });
+    const active = activeSpecialSet(dateKey, birthday);
+    // 只列出「現在正在進行」或「已經拿過至少一張」的限定組
+    return SPECIAL_SETS.concat([BIRTHDAY_SET])
+      .map(set => ({
+        set,
+        active: !!active && active.id === set.id,
+        slots: set.stickers.map(sticker => ({
+          sticker,
+          dateKey: collected.get(sticker.id) || '',
+          collected: collected.has(sticker.id)
+        }))
+      }))
+      .filter(album => album.active || album.slots.some(slot => slot.collected));
+  }
+
   function makeSticker(theme, code) {
     return {
       id: `${theme}-${code}`,
@@ -78,7 +179,8 @@
   function stickerForDate(dateKey, options) {
     const opts = typeof options === 'string' ? { childId: options } : (options || {});
     const theme = opts.theme || 'daily';
-    const pool = stickerPoolForTheme(theme);
+    const special = activeSpecialSet(dateKey, opts.birthday);
+    const pool = special ? special.stickers : stickerPoolForTheme(theme);
     const hash = Math.abs(hashString(`${dateKey}:${opts.childId || 'child'}:${theme}`));
     return pool[hash % pool.length];
   }
@@ -157,6 +259,13 @@
     DEFAULT_BLOCKERS,
     BLOCKERS: DEFAULT_BLOCKERS,
     STICKER_THEMES,
+    SPECIAL_SETS,
+    BIRTHDAY_SET,
+    normalizeBirthday,
+    daysFromBirthday,
+    isBirthdayToday,
+    activeSpecialSet,
+    specialAlbums,
     stickerPoolForTheme,
     normalizeBlockers,
     stickerForDate,

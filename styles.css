@@ -2200,3 +2200,27 @@ body.on-welcome { overflow: hidden; }
 .app-teaser-go { color: var(--orange); font-size: 12px; flex-shrink: 0; }
 .app-teaser-close { background: none; border: 0; color: var(--ink-soft); font-size: 14px; width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; }
 .welcome-actions [hidden] { display: none !important; }
+
+/* 節慶／生日限定貼紙 */
+.sticker-album-head.special { margin-top: 18px; }
+.sticker-album-live { font-style: normal; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: #DA844F; color: #fff; font-size: 10px; letter-spacing: 0.04em; }
+.sticker-slot-img.silhouette img { filter: grayscale(1) brightness(0); opacity: 0.12; }
+.greet-sub.birthday { color: #DA844F; font-weight: 800; }
+
+/* 家長設定 · 貼紙主題預覽卡片 */
+.sticker-theme-cards { display: grid; gap: 8px; }
+.sticker-theme-card { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; border: 1.5px solid rgba(94,84,83,0.14); background: var(--white); cursor: pointer; }
+.sticker-theme-card.selected { border: 2px solid #DA844F; background: rgba(218,132,79,0.06); }
+.sticker-theme-name { flex: 1; font-size: 14px; font-weight: 800; color: var(--ink); }
+.sticker-theme-name small { display: block; font-size: 11px; font-weight: 600; color: var(--ink-soft); }
+.sticker-theme-samples { display: flex; gap: 4px; }
+.sticker-theme-all { background: none; border: 0; padding: 4px 2px; font-size: 12px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.sticker-theme-note { font-size: 12px; color: var(--ink-soft); margin-top: 8px; line-height: 1.5; }
+.sticker-theme-festival { display: block; margin-top: 2px; }
+.birthday-fields { display: flex; gap: 8px; }
+.birthday-fields select { flex: 1; }
+.sticker-preview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 8px 0 4px; }
+.sticker-preview-cell { aspect-ratio: 1; display: grid; place-items: center; border-radius: 12px; background: var(--white); border: 1px solid rgba(94,84,83,0.1); }
+.festival-preview-head { display: flex; justify-content: space-between; align-items: baseline; margin-top: 16px; font-size: 14px; font-weight: 800; color: var(--ink); }
+.festival-preview-head span { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.sticker-preview-cell img { width: 72%; height: 72%; object-fit: contain; }

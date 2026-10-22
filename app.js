@@ -150,6 +150,7 @@
     child.reflectionBlockers = reflectionRules
       ? reflectionRules.normalizeBlockers(child.reflectionBlockers)
       : (child.reflectionBlockers || []);
+    child.birthday = reflectionRules ? reflectionRules.normalizeBirthday(child.birthday) : null;
     delete child.parentPin;
     delete child.parentSecretQ;
     delete child.parentSecretA;
@@ -1065,10 +1066,7 @@
     const today = todayKey();
     const entry = state.dailyReflections[today] || null;
     if (entry && entry.completed && (!entry.sticker || !entry.sticker.src) && reflectionRules) {
-      entry.sticker = reflectionRules.stickerForDate(today, {
-        childId: state.id,
-        theme: stickerThemeId()
-      });
+      entry.sticker = reflectionRules.stickerForDate(today, stickerOptions());
       state.dailyReflections[today] = entry;
       save();
     }
@@ -1086,6 +1084,12 @@
     return state.reflectionBlockers;
   }
 
+  function stickerOptions() {
+    return { childId: state.id, theme: stickerThemeId(), birthday: state.birthday || null };
+  }
+  function activeSpecialSet() {
+    return reflectionRules ? reflectionRules.activeSpecialSet(todayKey(), state.birthday) : null;
+  }
   function stickerThemeId() {
     const id = state.stickerTheme || 'daily';
     return reflectionRules && reflectionRules.STICKER_THEMES[id] ? id : 'daily';
@@ -1131,8 +1135,8 @@
     const sticker = slot.sticker || {};
     return `
       <div class="sticker-slot${slot.collected ? ' collected' : ''}">
-        <div class="sticker-slot-img">
-          ${slot.collected ? stickerIconHtml(sticker, 42) : ''}
+        <div class="sticker-slot-img${!slot.collected && slot.silhouette ? ' silhouette' : ''}">
+          ${slot.collected || slot.silhouette ? stickerIconHtml(sticker, 42) : ''}
         </div>
         <div class="sticker-slot-date">${slot.collected ? formatDateShort(slot.dateKey) : ''}</div>
       </div>
@@ -1177,10 +1181,7 @@
     };
     const sticker = (entry.completed && entry.sticker)
       ? entry.sticker
-      : reflectionRules.stickerForDate(todayKey(), {
-          childId: state.id,
-          theme: stickerThemeId()
-        });
+      : reflectionRules.stickerForDate(todayKey(), stickerOptions());
     const blockers = reflectionBlockers();
 
     openModal(`
@@ -1212,7 +1213,9 @@
           <div class="reflection-preview-copy">
             <div class="reflection-preview-label">今天的貼紙</div>
             <div class="reflection-preview-message">送自己一張貼紙，為明天加油。</div>
-            <div class="reflection-preview-hint">貼紙主題可到家長模式的孩子檔案調整。</div>
+            <div class="reflection-preview-hint">${activeSpecialSet()
+              ? `現在是${escHtml(activeSpecialSet().label)}限定貼紙期間，收下就會永遠留在收藏冊！`
+              : '貼紙主題可到家長模式的孩子檔案調整。'}</div>
           </div>
           ${reflectionStickerPreviewHtml(sticker)}
         </div>
@@ -1247,11 +1250,7 @@
         state.dailyReflections || {},
         todayKey(),
         selected,
-        {
-          childId: state.id,
-          theme: stickerThemeId(),
-          blockers: reflectionBlockers()
-        }
+        Object.assign(stickerOptions(), { blockers: reflectionBlockers() })
       );
       save();
       renderReflectionCard();
@@ -1294,7 +1293,18 @@
     if (hasActiveTimer) todayCountdownTimer = setInterval(renderToday, 1000);
   }
 
+  function renderBirthdayGreeting() {
+    const sub = document.getElementById('greet-sub');
+    if (!sub || !reflectionRules) return;
+    if (!sub.dataset.defaultText) sub.dataset.defaultText = sub.textContent;
+    const birthday = reflectionRules.isBirthdayToday(todayKey(), state.birthday);
+    sub.textContent = birthday
+      ? `${childName()}，生日快樂！松鼠送你生日限定貼紙`
+      : sub.dataset.defaultText;
+    sub.classList.toggle('birthday', birthday);
+  }
   function renderToday() {
+    renderBirthdayGreeting();
     const today = todayKey();
     const log = state.log[today] || {};
     const list = document.getElementById('habit-list');
@@ -2753,6 +2763,7 @@
     child.dailyReflections = {};
     child.stickerTheme = state.stickerTheme || 'daily';
     child.reflectionBlockers = structuredClone(reflectionBlockers());
+    child.birthday = null;
     return child;
   }
 
@@ -2775,6 +2786,46 @@
     toast(`已切換到 ${state.userName}`);
   }
 
+  function themeSampleStickers(theme) {
+    const list = theme.stickers;
+    return [0, Math.floor(list.length / 2), list.length - 1].map(i => list[i]);
+  }
+  function stickerGridHtml(stickers) {
+    return `<div class="sticker-preview-grid">${stickers.map(st => `<div class="sticker-preview-cell">${stickerIconHtml(st, 44)}</div>`).join('')}</div>`;
+  }
+  function bindPreviewBack() {
+    document.getElementById('modal').querySelector('[data-preview-back]').onclick = openChildProfilesModal;
+  }
+  function openThemePreviewModal(themeId) {
+    const theme = reflectionRules.STICKER_THEMES[themeId] || reflectionRules.STICKER_THEMES.daily;
+    openModal(`
+      <h3 class="modal-title">${escHtml(theme.label)}</h3>
+      <p class="modal-sub">共 ${theme.stickers.length} 張，完成小回顧時從這裡抽一張。</p>
+      ${stickerGridHtml(theme.stickers)}
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-preview-back>返回</button>
+      </div>
+    `);
+    bindPreviewBack();
+  }
+  function openFestivalPreviewModal() {
+    const fmt = md => `${parseInt(md.slice(0, 2), 10)}/${parseInt(md.slice(3), 10)}`;
+    const active = activeSpecialSet();
+    openModal(`
+      <h3 class="modal-title">今年的節慶貼紙</h3>
+      <p class="modal-sub">節日期間完成小回顧，抽到的就是限定貼紙。拿到的會永遠留在收藏冊，沒拿到的明年再來收集。</p>
+      ${reflectionRules.SPECIAL_SETS.map(set => `
+        <div class="festival-preview-head">${escHtml(set.label)}<span>${fmt(set.start)} 到 ${fmt(set.end)}${active && active.id === set.id ? ' · 進行中' : ''}</span></div>
+        ${stickerGridHtml(set.stickers)}
+      `).join('')}
+      <div class="festival-preview-head">生日<span>${state.birthday ? `${state.birthday.month}/${state.birthday.day} 前後一週` : '在孩子檔案填生日就會出現'}</span></div>
+      ${stickerGridHtml(reflectionRules.BIRTHDAY_SET.stickers)}
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-preview-back>返回</button>
+      </div>
+    `);
+    bindPreviewBack();
+  }
   function openChildProfilesModal() {
     const rows = appState.children.map(child => {
       const active = child.id === appState.activeChildId;
@@ -2800,12 +2851,32 @@
       <form id="reflection-settings-form">
         <h4 class="settings-subtitle">每日小回顧</h4>
         <div class="field">
-          <label>貼紙主題</label>
-          <select name="stickerTheme">
+          <label>貼紙主題（點一下就換）</label>
+          <div class="sticker-theme-cards">
             ${Object.values(reflectionRules.STICKER_THEMES).map(theme => `
-              <option value="${escAttr(theme.id)}" ${stickerThemeId() === theme.id ? 'selected' : ''}>${escHtml(theme.label)}</option>
+              <div class="sticker-theme-card${stickerThemeId() === theme.id ? ' selected' : ''}" data-pick-theme="${escAttr(theme.id)}" role="button" tabindex="0">
+                <div class="sticker-theme-name">${escHtml(theme.label)}<small>${theme.stickers.length} 張</small></div>
+                <div class="sticker-theme-samples">${themeSampleStickers(theme).map(st => stickerIconHtml(st, 30)).join('')}</div>
+                <button type="button" class="sticker-theme-all" data-preview-theme="${escAttr(theme.id)}">看全部</button>
+              </div>
             `).join('')}
-          </select>
+          </div>
+          <div class="sticker-theme-note">節慶貼紙會在節日期間自動出現，不用另外設定。</div>
+          <button type="button" class="sticker-theme-all sticker-theme-festival" data-preview-festival>看今年的節慶貼紙</button>
+        </div>
+        <div class="field">
+          <label>${escHtml(childName())}的生日（選填，只存在這台裝置）</label>
+          <div class="birthday-fields">
+            <select name="birthdayMonth">
+              <option value="">月</option>
+              ${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}" ${state.birthday && state.birthday.month === i + 1 ? 'selected' : ''}>${i + 1} 月</option>`).join('')}
+            </select>
+            <select name="birthdayDay">
+              <option value="">日</option>
+              ${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}" ${state.birthday && state.birthday.day === i + 1 ? 'selected' : ''}>${i + 1} 日</option>`).join('')}
+            </select>
+          </div>
+          <div class="sticker-theme-note">生日前後一週，小回顧會抽到生日限定貼紙。不填也沒關係。</div>
         </div>
         <div class="reflection-settings-blockers">
           ${blockerInputsHtml(reflectionBlockers())}
@@ -2836,7 +2907,13 @@
     root.querySelector('#reflection-settings-form').onsubmit = (e) => {
       e.preventDefault();
       const labels = Array.from(e.target.querySelectorAll('input[name="blocker"]')).map(input => input.value.trim());
-      state.stickerTheme = e.target.stickerTheme.value;
+      const month = e.target.birthdayMonth.value;
+      const day = e.target.birthdayDay.value;
+      if ((month || day) && !reflectionRules.normalizeBirthday({ month, day })) {
+        alert('生日的月和日要一起選，而且要是存在的日期喔。');
+        return;
+      }
+      state.birthday = reflectionRules.normalizeBirthday({ month, day });
       state.reflectionBlockers = reflectionRules.normalizeBlockers(labels.map((label, index) => ({
         id: (state.reflectionBlockers && state.reflectionBlockers[index] && state.reflectionBlockers[index].id) || '',
         label
@@ -2846,6 +2923,21 @@
       refreshCurrentScreen();
       toast('小回顧設定已更新 ★');
     };
+    root.querySelectorAll('[data-pick-theme]').forEach(card => {
+      const pick = () => {
+        state.stickerTheme = card.dataset.pickTheme;
+        save();
+        root.querySelectorAll('[data-pick-theme]').forEach(item => item.classList.toggle('selected', item === card));
+        refreshCurrentScreen();
+        toast(`貼紙主題換成「${reflectionRules.STICKER_THEMES[state.stickerTheme].label}」★`);
+      };
+      card.onclick = (e) => { if (!e.target.closest('[data-preview-theme]')) pick(); };
+      card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
+    });
+    root.querySelectorAll('[data-preview-theme]').forEach(btn => {
+      btn.onclick = () => openThemePreviewModal(btn.dataset.previewTheme);
+    });
+    root.querySelector('[data-preview-festival]').onclick = openFestivalPreviewModal;
     root.querySelector('[data-reset-reflection-settings]').onclick = () => {
       state.stickerTheme = 'daily';
       state.reflectionBlockers = reflectionRules.normalizeBlockers(reflectionRules.DEFAULT_BLOCKERS);
@@ -2998,6 +3090,15 @@
       <div class="sticker-album-grid">
         ${board.map(stickerCollectionSlotHtml).join('')}
       </div>
+      ${reflectionRules.specialAlbums(state.dailyReflections || {}, todayKey(), state.birthday).map(album => `
+        <div class="sticker-album-head special">
+          <span>${escHtml(album.set.label)}限定${album.active ? '<em class="sticker-album-live">進行中</em>' : ''}</span>
+          <span>${album.slots.filter(slot => slot.collected).length}/${album.slots.length}</span>
+        </div>
+        <div class="sticker-album-grid">
+          ${album.slots.map(slot => stickerCollectionSlotHtml(Object.assign({ silhouette: true }, slot))).join('')}
+        </div>
+      `).join('')}
     `;
   }
   function formatDate(key) {
@@ -3364,7 +3465,7 @@
         <ul>
           <li>不需要建立帳號，不收集 email、電話或真實姓名。</li>
           <li>沒有廣告，也沒有任何追蹤或分析工具。</li>
-          <li>孩子的暱稱、任務、點數、獎勵和紀錄，只存在這台裝置上，不會上傳到任何伺服器。我們也看不到這些資料。</li>
+          <li>孩子的暱稱、生日（只有月和日，選填）、任務、點數、獎勵和紀錄，只存在這台裝置上，不會上傳到任何伺服器。我們也看不到這些資料。</li>
           <li>「備份資料」產生的檔案，只會存到你自己選的地方。備份檔不含家長密碼。</li>
           <li>刪除 App 或使用「清掉全部資料」後，資料就會消失。換手機前請先備份。</li>
         </ul>
