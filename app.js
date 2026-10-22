@@ -3504,8 +3504,8 @@
   const NEWS_INTERVAL = 10000;
   function newsItems() {
     return [
-      { id: 'app-coming-2026', badge: 'NEW', text: '松鼠橡實 App 版即將推出！', webOnly: true, open: openAppTeaserModal },
-      { id: 'special-stickers-2026', badge: '新功能', text: '節慶限定貼紙和生日週來了！', open: openStickerNewsModal }
+      { id: 'special-stickers-2026', badge: '新功能', text: '節慶限定貼紙和生日週來了！', open: openStickerNewsModal },
+      { id: 'app-coming-2026', badge: 'NEW', text: '松鼠橡實 App 版即將推出！', webOnly: true, open: openAppTeaserModal }
     ];
   }
   function dismissedNews() {
