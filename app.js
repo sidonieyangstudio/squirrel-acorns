@@ -368,10 +368,13 @@
     updateDockButtons(id);
     window.scrollTo(0, 0);
     if (id === 'screen-rewards') hopRewardsSquirrel();
+    if (id === 'screen-unlock') hopSquirrel(document.querySelector('.unlock-squirrel-circle img'));
   }
   // 進獎勵小店時松鼠跳一下歡迎，跳完回到原本的呼吸動畫
   function hopRewardsSquirrel() {
-    const img = document.querySelector('#screen-rewards .points-card-squirrel.cheer');
+    hopSquirrel(document.querySelector('#screen-rewards .points-card-squirrel.cheer'));
+  }
+  function hopSquirrel(img) {
     if (!img) return;
     img.classList.remove('hop');
     void img.offsetWidth;
