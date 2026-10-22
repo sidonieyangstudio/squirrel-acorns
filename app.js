@@ -12,6 +12,9 @@
   const KEY_OLD = 'squirrel-points-v2';
   const ACTIVE_CHILD_KEY = 'squirrel-active-child-v1';
   // 第一次打開（手機裡還沒有任何松鼠橡實資料）才顯示歡迎畫面；要在任何存檔之前判斷
+  // App 版（iOS）和網頁版共用同一份程式；有些畫面只在其中一邊出現
+  const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+  const APP_TEASER_KEY = 'squirrel-app-teaser-dismissed-v1';
   let isFirstRun = false;
   try { isFirstRun = !localStorage.getItem(KEY) && !localStorage.getItem(KEY_OLD); } catch (e) {}
   const todayKey = () => {
@@ -3302,15 +3305,54 @@
     document.body.classList.add('on-welcome');
     const close = () => { el.hidden = true; document.body.classList.remove('on-welcome'); };
     // 按開始就先存一次，下次打開才不會又看到歡迎畫面
+    el.querySelectorAll(isNativeApp ? '[data-web-only]' : '[data-app-only]').forEach(b => { b.hidden = true; });
     el.querySelector('[data-welcome-start]').onclick = () => { saveAll(); close(); };
     const fileInput = el.querySelector('[data-welcome-file]');
     el.querySelector('[data-welcome-import]').onclick = () => fileInput.click();
+    el.querySelector('[data-welcome-restore]').onclick = () => fileInput.click();
     fileInput.onchange = () => {
       const file = fileInput.files && fileInput.files[0];
       fileInput.value = '';
       if (file) importBackup(file);
     };
     el.querySelector('[data-welcome-help]').onclick = openBackupHelpModal;
+  }
+  // 網頁版預告：首頁小橫幅＋備份區多一句；App 上架後改成上架公告（另外做）
+  function setupAppTeaser() {
+    if (isNativeApp) return;
+    const sub = document.getElementById('mine-backup-sub');
+    if (sub) sub.textContent = '資料只存在這支手機。先備份一份存到「檔案」，以後換手機或改用 App 版都能搬過去。';
+    const bar = document.getElementById('app-teaser');
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(APP_TEASER_KEY) === '1'; } catch (e) {}
+    if (!bar || dismissed) return;
+    bar.hidden = false;
+    document.getElementById('app-teaser-close').onclick = () => {
+      bar.hidden = true;
+      try { localStorage.setItem(APP_TEASER_KEY, '1'); } catch (e) {}
+    };
+    document.getElementById('app-teaser-open').onclick = openAppTeaserModal;
+  }
+  function openAppTeaserModal() {
+    openModal(`
+      <h3 class="modal-title">松鼠橡實 App 版即將推出</h3>
+      <div class="about-body">
+        <p>我們正在把松鼠橡實做成 iPhone App，推出時這裡會通知你。</p>
+        <p>現在可以先做一件事：到「我的小本本」最下面按「備份資料」，存一份到「檔案」。以後改用 App 版，點數、任務和紀錄都能一起搬過去。</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" data-cancel>知道了</button>
+        <button type="button" class="btn btn-primary" data-go-backup>去備份</button>
+      </div>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('[data-go-backup]').onclick = () => {
+      closeModal();
+      showScreen('screen-mine');
+      if (typeof renderMine === 'function') renderMine();
+      setTimeout(() => document.getElementById('btn-mine-backup').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    };
   }
   function openAboutModal() {
     openModal(`
@@ -3454,6 +3496,7 @@
   document.getElementById('btn-about').onclick = openAboutModal;
   document.getElementById('btn-mine-backup').onclick = exportBackup;
   setupWelcome();
+  setupAppTeaser();
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
   document.getElementById('btn-go-today').onclick     = () => goToScreen('today');

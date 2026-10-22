@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=94">
+<link rel="stylesheet" href="styles.css?v=96">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -51,6 +51,14 @@
     </header>
 
     <main class="list-section">
+      <div class="app-teaser" id="app-teaser" hidden>
+        <button type="button" class="app-teaser-main" id="app-teaser-open">
+          <span class="app-teaser-badge">NEW</span>
+          <span class="app-teaser-text">松鼠橡實 App 版即將推出！</span>
+          <span class="app-teaser-go">看看 ➜</span>
+        </button>
+        <button type="button" class="app-teaser-close" id="app-teaser-close" aria-label="關掉這則提示">✕</button>
+      </div>
       <section class="today-mode-card">
         <div class="mode-card-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5E5453" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18"/><path d="M6 5v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5"/><path d="M9 9h6"/><path d="M9 13h6"/></svg>
@@ -227,7 +235,7 @@
 
       <div class="backup-zone mine-backup">
         <div class="backup-zone-title">資料備份</div>
-        <p class="backup-zone-sub">資料只存在這支手機。換手機或搬到 App 前，先備份一份，存到「檔案」或傳給自己。</p>
+        <p class="backup-zone-sub" id="mine-backup-sub">資料只存在這支手機。換手機前先備份一份，存到「檔案」或傳給自己。</p>
         <button type="button" class="btn btn-ghost" id="btn-mine-backup">備份資料</button>
       </div>
 
@@ -243,8 +251,9 @@
       <p class="welcome-sub">和松鼠一起收集橡實，養成好習慣</p>
       <div class="welcome-actions">
         <button type="button" class="btn btn-primary btn-block" data-welcome-start>開始使用</button>
-        <button type="button" class="btn btn-ghost btn-block" data-welcome-import>我用過網頁版，把資料搬過來</button>
-        <button type="button" class="welcome-help" data-welcome-help>怎麼從網頁版備份？</button>
+        <button type="button" class="btn btn-ghost btn-block" data-welcome-import data-app-only>我用過網頁版，把資料搬過來</button>
+        <button type="button" class="welcome-help" data-welcome-help data-app-only>怎麼從網頁版備份？</button>
+        <button type="button" class="welcome-help" data-welcome-restore data-web-only>我有備份檔，從備份還原</button>
       </div>
       <input type="file" accept="application/json,.json" data-welcome-file hidden>
       <p class="welcome-brand">歐的樂星球 出品</p>
@@ -363,7 +372,7 @@
 <script src="reflection-rules.js?v=4"></script>
 <script src="backup-rules.js?v=1"></script>
 <script src="squirrel-mood.js?v=1"></script>
-<script src="app.js?v=89"></script>
+<script src="app.js?v=90"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
