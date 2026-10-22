@@ -1193,7 +1193,7 @@
           <div class="reflection-options reflection-moods">
             ${reflectionRules.MOODS.map(item => `
               <button type="button" class="reflection-option${selected.mood === item.id ? ' selected' : ''}" data-reflection-mood="${item.id}">
-                <span class="reflection-face">${escHtml(item.face)}</span>
+                <img class="reflection-face-img" src="assets/face-${escAttr(item.id)}.webp" alt="" width="52" height="52">
                 <span>${escHtml(item.label)}</span>
               </button>
             `).join('')}
