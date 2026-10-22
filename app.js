@@ -3273,46 +3273,6 @@
     saveAll();
     window.location.reload();
   }
-  // 需要家長確認的動作：家長模式中直接做；有設密碼就先輸入；沒設密碼就直接做
-  function requireParentPin(onOk) {
-    if (parentMode) { onOk(); return; }
-    if (!appState.parentPin) {
-      // 沒設家長密碼：先確認一次，避免孩子誤按，並提醒可以設密碼
-      openModal(`
-        <h3 class="modal-title">要備份資料嗎？</h3>
-        <p class="modal-sub">這是給家長用的功能。還沒設定家長密碼，建議點右上角鎖頭設一組，孩子就不會誤按。</p>
-        <div class="modal-actions" style="margin-top:18px;">
-          <button type="button" class="btn" data-cancel>取消</button>
-          <button type="button" class="btn btn-primary" data-go>繼續備份</button>
-        </div>
-      `);
-      const box = document.getElementById('modal');
-      box.querySelector('[data-cancel]').onclick = closeModal;
-      box.querySelector('[data-go]').onclick = () => { closeModal(); onOk(); };
-      return;
-    }
-    openModal(`
-      <h3 class="modal-title">請家長輸入密碼</h3>
-      <p class="modal-sub">確認是家長再繼續</p>
-      <form id="pin-gate-form">
-        <div class="field">
-          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autofocus placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:0.5em;" />
-        </div>
-        <div class="modal-actions" style="margin-top:18px;">
-          <button type="button" class="btn" data-cancel>取消</button>
-          <button type="submit" class="btn btn-primary">送出</button>
-        </div>
-      </form>
-    `);
-    const root = document.getElementById('modal');
-    root.querySelector('[data-cancel]').onclick = closeModal;
-    root.querySelector('#pin-gate-form').onsubmit = (e) => {
-      e.preventDefault();
-      if (e.target.pin.value.trim() !== appState.parentPin) { shakeModal(); return; }
-      closeModal();
-      onOk();
-    };
-  }
   function openBackupHelpModal() {
     openModal(`
       <h3 class="modal-title">從網頁版搬資料過來</h3>
@@ -3321,7 +3281,7 @@
         <ul>
           <li>用原本的方式打開網頁版松鼠橡實。</li>
           <li>點下方「我的」，拉到最下面，按「備份資料」。</li>
-          <li>輸入家長密碼後，選「儲存到檔案」。</li>
+          <li>跳出選單後，選「儲存到檔案」，存在 iCloud 雲碟或「我的 iPhone」都可以。</li>
         </ul>
         <p><b>第二步：在這裡還原</b></p>
         <ul>
@@ -3492,7 +3452,7 @@
   })();
   document.getElementById('parent-toggle').onclick = openParentModal;
   document.getElementById('btn-about').onclick = openAboutModal;
-  document.getElementById('btn-mine-backup').onclick = () => requireParentPin(exportBackup);
+  document.getElementById('btn-mine-backup').onclick = exportBackup;
   setupWelcome();
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
