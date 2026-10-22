@@ -1547,10 +1547,13 @@ body.parent-mode .greet-row { padding-right: 0; }
   transition: transform .15s var(--ease), box-shadow .15s var(--ease);
 }
 .parent-toggle:active { transform: translateY(1px); box-shadow: 0 1px 3px rgba(94,84,83,0.10); }
+/* 家長模式：上方橘色橫幅會蓋到鎖頭的位置（手機有瀏海時整顆鎖頭都在橫幅裡），
+   所以鎖頭改成白底橘色圖示，在橘色橫幅上才看得到 */
 body.parent-mode .parent-toggle {
-  background: var(--orange);
-  color: var(--white);
-  border-color: rgba(94,84,83,0.25);
+  background: var(--white);
+  color: var(--orange);
+  border: 2px solid var(--white);
+  box-shadow: 0 2px 8px rgba(94,84,83,0.28);
 }
 .parent-toggle .ic-unlock { display: none; }
 body.parent-mode .parent-toggle .ic-lock { display: none; }
