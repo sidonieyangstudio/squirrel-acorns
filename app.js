@@ -3103,7 +3103,7 @@
             回書架
           </button>
           <div class="sticker-book-title">
-            <span>${escHtml(book.label)}${book.active ? '<em class="sticker-book-tag live">進行中</em>' : ''}${book.full ? '<em class="sticker-book-tag full">集滿了</em>' : ''}</span>
+            <span>${escHtml(book.label)}${book.full ? '<em class="sticker-book-tag full">集滿了</em>' : ''}</span>
             <span class="sticker-book-count">${book.collectedCount}/${book.total}</span>
           </div>
           <div class="sticker-book-period">${escHtml(stickerPeriodText(book))}</div>
@@ -3120,14 +3120,26 @@
       return;
     }
     openStickerBookId = null;
+    const current = reflectionRules.currentSpecialBook(state.dailyReflections || {}, todayKey(), state.birthday);
     list.innerHTML = `
+      ${current ? `
+        <div class="sticker-current">
+          <div class="sticker-book-title">
+            <span>${escHtml(current.label)}限定<em class="sticker-book-tag live">進行中</em>${current.full ? '<em class="sticker-book-tag full">集滿了</em>' : ''}</span>
+            <span class="sticker-book-count">${current.collectedCount}/${current.total}</span>
+          </div>
+          <div class="sticker-book-period">${escHtml(stickerPeriodText(current))}，期間結束後會收進書架</div>
+          <div class="sticker-album-grid">
+            ${current.slots.map(slot => stickerCollectionSlotHtml(Object.assign({ silhouette: true }, slot))).join('')}
+          </div>
+        </div>
+      ` : ''}
       <div class="sticker-shelf">
         ${shelf.map(item => `
-          <button type="button" class="sticker-book${item.active ? ' live' : ''}${item.full ? ' full' : ''}" data-open-book="${escAttr(item.id)}">
+          <button type="button" class="sticker-book${item.full ? ' full' : ''}" data-open-book="${escAttr(item.id)}">
             <span class="sticker-book-cover${item.collectedCount ? '' : ' silhouette'}">${stickerIconHtml(item.cover, 48)}</span>
             <span class="sticker-book-name">${escHtml(item.label)}</span>
             <span class="sticker-book-progress">${item.collectedCount}/${item.total}</span>
-            ${item.active ? '<em class="sticker-book-tag live">進行中</em>' : ''}
             ${item.full ? '<em class="sticker-book-tag full">集滿了</em>' : ''}
           </button>
         `).join('')}

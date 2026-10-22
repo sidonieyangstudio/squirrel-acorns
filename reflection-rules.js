@@ -135,43 +135,54 @@
     return seasonalSetForDate(dateKey);
   }
 
-  // 貼紙書架：每組貼紙是一本。日常主題（可愛日常、交通工具）固定出現；
-  // 限定本子拿到第一張才上架。進行中的限定本子排最前面。
-  function stickerBookshelf(reflections, dateKey, birthday) {
+  function collectedMap(reflections) {
     const collected = new Map();
     collectedStickers(reflections).forEach(item => {
       const id = item.sticker && item.sticker.id;
       if (id && !collected.has(id)) collected.set(id, item.dateKey);
     });
-    const active = activeSpecialSet(dateKey, birthday);
-    const makeBook = (set, kind) => {
-      const slots = set.stickers.map(sticker => ({
-        sticker,
-        dateKey: collected.get(sticker.id) || '',
-        collected: collected.has(sticker.id)
-      }));
-      const count = slots.filter(slot => slot.collected).length;
-      const firstGot = slots.find(slot => slot.collected);
-      return {
-        id: set.id,
-        label: set.label,
-        kind,
-        start: set.start || '',
-        end: set.end || '',
-        active: kind !== 'theme' && !!active && active.id === set.id,
-        collectedCount: count,
-        total: slots.length,
-        full: count === slots.length,
-        cover: (firstGot || slots[0]).sticker,
-        slots
-      };
+    return collected;
+  }
+
+  function makeBook(set, kind, collected) {
+    const slots = set.stickers.map(sticker => ({
+      sticker,
+      dateKey: collected.get(sticker.id) || '',
+      collected: collected.has(sticker.id)
+    }));
+    const count = slots.filter(slot => slot.collected).length;
+    const firstGot = slots.find(slot => slot.collected);
+    return {
+      id: set.id,
+      label: set.label,
+      kind,
+      start: set.start || '',
+      end: set.end || '',
+      collectedCount: count,
+      total: slots.length,
+      full: count === slots.length,
+      cover: (firstGot || slots[0]).sticker,
+      slots
     };
-    const themeBooks = ['daily', 'vehicle'].map(id => makeBook(STICKER_THEMES[id], 'theme'));
-    const specialBooks = SPECIAL_SETS.map(set => makeBook(set, 'season'))
-      .concat([makeBook(BIRTHDAY_SET, 'birthday')])
-      .filter(book => book.collectedCount > 0);
-    return specialBooks.filter(book => book.active)
-      .concat(themeBooks, specialBooks.filter(book => !book.active));
+  }
+
+  // 正在進行的限定貼紙（節慶或生日週）：直接展開在書架上方，還沒拿到也顯示。
+  function currentSpecialBook(reflections, dateKey, birthday) {
+    const active = activeSpecialSet(dateKey, birthday);
+    if (!active) return null;
+    return makeBook(active, active.id === 'birthday' ? 'birthday' : 'season', collectedMap(reflections));
+  }
+
+  // 貼紙書架：每組貼紙是一本。日常主題（可愛日常、交通工具）固定出現；
+  // 限定本子拿到第一張才上架，正在進行的那組不在書架上（期間結束才收成本子）。
+  function stickerBookshelf(reflections, dateKey, birthday) {
+    const collected = collectedMap(reflections);
+    const active = activeSpecialSet(dateKey, birthday);
+    const themeBooks = ['daily', 'vehicle'].map(id => makeBook(STICKER_THEMES[id], 'theme', collected));
+    const specialBooks = SPECIAL_SETS.map(set => makeBook(set, 'season', collected))
+      .concat([makeBook(BIRTHDAY_SET, 'birthday', collected)])
+      .filter(book => book.collectedCount > 0 && !(active && active.id === book.id));
+    return themeBooks.concat(specialBooks);
   }
 
   function makeSticker(theme, code) {
@@ -284,6 +295,7 @@
     isBirthdayToday,
     activeSpecialSet,
     stickerBookshelf,
+    currentSpecialBook,
     stickerPoolForTheme,
     normalizeBlockers,
     stickerForDate,

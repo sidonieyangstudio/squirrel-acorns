@@ -2248,3 +2248,4 @@ body.on-welcome { overflow: hidden; }
 
 /* 小回顧 · 松鼠表情臉 */
 .reflection-face-img { width: 52px; height: 52px; object-fit: contain; display: block; margin: 0 auto 2px; }
+.sticker-current { margin-bottom: 18px; padding: 14px 12px 12px; border-radius: 18px; border: 2px solid #DA844F; background: rgba(218,132,79,0.05); }

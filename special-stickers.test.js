@@ -76,16 +76,25 @@ test('bookshelf always has the two everyday books and no mixed book', () => {
   assert.equal(shelf[0].cover.id, shelf[0].slots[0].sticker.id);
 });
 
-test('a special book only appears after its first sticker and is kept after the season', () => {
-  assert.deepEqual(rules.stickerBookshelf({}, '2026-10-22', null).map(b => b.id), ['daily', 'vehicle']);
+test('the running special set is shown open, then becomes a book after the season', () => {
+  assert.equal(rules.currentSpecialBook({}, '2026-11-15', null), null);
+  const empty = rules.currentSpecialBook({}, '2026-10-22', null);
+  assert.equal(empty.id, 'halloween');
+  assert.equal(empty.collectedCount, 0);
+  assert.equal(empty.start, '10-11');
+
   const r = done({}, '2026-10-22');
-  const during = rules.stickerBookshelf(r, '2026-10-22', null);
-  assert.deepEqual(during.map(b => [b.id, b.active]), [['halloween', true], ['daily', false], ['vehicle', false]]);
-  assert.equal(during[0].collectedCount, 1);
-  assert.equal(during[0].cover.id, r['2026-10-22'].sticker.id);
-  assert.equal(during[0].start, '10-11');
+  assert.equal(rules.currentSpecialBook(r, '2026-10-22', null).collectedCount, 1);
+  assert.deepEqual(rules.stickerBookshelf(r, '2026-10-22', null).map(b => b.id), ['daily', 'vehicle']);
   const after = rules.stickerBookshelf(r, '2026-11-15', null);
-  assert.deepEqual(after.map(b => [b.id, b.active]), [['daily', false], ['vehicle', false], ['halloween', false]]);
+  assert.deepEqual(after.map(b => b.id), ['daily', 'vehicle', 'halloween']);
+  assert.equal(after[2].cover.id, r['2026-10-22'].sticker.id);
+});
+
+test('birthday week shows the birthday set open', () => {
+  const book = rules.currentSpecialBook({}, '2026-12-24', { month: 12, day: 24 });
+  assert.equal(book.id, 'birthday');
+  assert.equal(book.kind, 'birthday');
 });
 
 test('everyday stickers count toward their own book even when collected under the mixed theme', () => {
