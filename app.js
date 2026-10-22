@@ -942,7 +942,7 @@
     document.getElementById('after-school-alarm-title').textContent = `${stripPhasePrefix(phase.title)}提醒時間到了`;
     document.getElementById('after-school-alarm-sub').textContent = phase.id === 'ticket'
       ? '先完成門票任務，再開心使用。'
-      : '先把晚上整理好，再舒服進入睡前時間。';
+      : '先整理好，再舒服進入睡前時間。';
     overlay.hidden = false;
     if (afterSchoolAlarmReady && !alreadyOpen) afterSchoolAlarmSfx();
   }
@@ -1073,7 +1073,7 @@
     const title = `${showName && name ? `${name}・` : ''}${stripPhasePrefix(phase.title)}提醒時間到了`;
     const body = phase.id === 'ticket'
       ? '先完成門票任務，再開心使用。'
-      : '先把晚上整理好，再舒服進入睡前時間。';
+      : '先整理好，再舒服進入睡前時間。';
     return { title, body };
   }
 
@@ -3857,10 +3857,6 @@
   document.getElementById('btn-after-school-alarm').onclick = toggleAfterSchoolAlarmSound;
   document.getElementById('after-school-alarm-dismiss').onclick = dismissAfterSchoolAlarm;
   document.getElementById('after-school-alarm-snooze').onclick = snoozeAfterSchoolAlarm;
-  document.getElementById('btn-open-after-school').onclick = () => {
-    softTapSfx();
-    goToScreen('after-school');
-  };
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
   document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
@@ -3870,6 +3866,12 @@
       openDailyReflectionModal();
     }
   });
+  // 往下捲時加上 is-scrolled，頂端底色帶會延伸到鎖頭高度（見 styles.css body::before）
+  const updateScrolledState = () => document.body.classList.toggle('is-scrolled', window.scrollY > 8);
+  window.addEventListener('scroll', updateScrolledState, { passive: true });
+  // App 版鍵盤套件預設會藏起鍵盤上方的「︿ ﹀ ✓」列；數字鍵盤要靠它收起，所以留著
+  const nativeKeyboard = isNativeApp && window.Capacitor.Plugins && window.Capacitor.Plugins.Keyboard;
+  if (nativeKeyboard) nativeKeyboard.setAccessoryBarVisible({ isVisible: true }).catch(() => {});
   window.addEventListener('focus', checkDayRollover);
   window.addEventListener('pageshow', checkDayRollover);
   document.addEventListener('visibilitychange', () => {

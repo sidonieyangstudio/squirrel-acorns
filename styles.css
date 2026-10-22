@@ -242,54 +242,6 @@ body.parent-mode .greet-row { padding-right: 0; }
   padding: 18px 18px 200px;
   overflow-y: auto;
 }
-.today-mode-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px;
-  margin: 0 0 18px;
-  background: linear-gradient(135deg, var(--white), var(--light-pink));
-  border: 1px solid rgba(218,132,79,0.22);
-  border-radius: 22px;
-  box-shadow: 0 8px 24px rgba(218,132,79,0.10);
-}
-.mode-card-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: var(--white);
-  border: 1px solid var(--hairline);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
-}
-.mode-card-text {
-  flex: 1;
-  min-width: 0;
-}
-.mode-card-kicker {
-  color: var(--lotus-deep);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .12em;
-}
-.mode-card-title {
-  margin-top: 2px;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-.mode-card-sub {
-  margin-top: 3px;
-  color: var(--ink-soft);
-  font-size: 12px;
-  line-height: 1.38;
-  font-weight: 500;
-}
-.today-mode-card .btn {
-  flex-shrink: 0;
-}
 .reflection-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1367,7 +1319,8 @@ body.parent-mode .greet-row { padding-right: 0; }
   border: 1px solid var(--hairline);
 }
 .mine-cal-grid {
-  display: grid; grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr)：7 欄平均分，小螢幕不會把最右欄擠到卡片邊緣 */
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 .mine-cal-dow {
@@ -1527,6 +1480,22 @@ body.parent-mode .greet-row { padding-right: 0; }
   0%   { transform: scale(1); color: var(--orange); }
   40%  { transform: scale(1.4); color: var(--pink); }
   100% { transform: scale(1); color: var(--orange); }
+}
+
+/* 頂端底色帶：平常只蓋住時間列（和原本看起來一樣）；往下捲之後延伸到鎖頭高度，
+   內容從底下捲過去，不會疊到時間列，也不會被鎖頭蓋住 */
+body::before {
+  content: "";
+  position: fixed; top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top);
+  background: var(--pink-bg);
+  z-index: 48;
+  pointer-events: none;
+  transition: height .2s var(--ease), box-shadow .2s var(--ease);
+}
+body.is-scrolled::before {
+  height: calc(env(safe-area-inset-top) + 48px);
+  box-shadow: 0 6px 14px rgba(94,84,83,0.08);
 }
 
 /* ---------- 家長模式 ---------- */
@@ -1717,6 +1686,14 @@ body.child-mode [data-delete-reward] { display: none !important; }
 .field select {
   appearance: none;
   -webkit-appearance: none;
+}
+/* iOS 的時間框自帶最小寬度，會超出卡片；拿掉原生外觀，和其他輸入框一樣寬 */
+.field input[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  min-width: 0;
+  min-height: 50px;
 }
 .field-row { display: flex; gap: 10px; }
 .field-row .field { flex: 1; }
