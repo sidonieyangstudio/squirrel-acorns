@@ -1444,7 +1444,6 @@
                 +${task.points} 顆橡實
                 <span class="after-school-tag${tagClass}">${escHtml(tag)}</span>
               </div>
-              ${isNext && !done ? `<button class="after-school-inline-next" data-after-school-toggle="${task.id}">完成這一關</button>` : ''}
             </div>
             <button class="check ${done ? 'done' : ''}" data-after-school-toggle="${task.id}" aria-label="切換${escAttr(task.title)}">
               ${done ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>' : ''}
@@ -1497,8 +1496,6 @@
       tag.classList.add('good');
       tag.classList.remove('warn');
     }
-    const inlineBtn = row.querySelector('.after-school-inline-next');
-    if (inlineBtn) inlineBtn.hidden = true;
 
     const curEl = document.getElementById('dock-current');
     const barEl = document.getElementById('dock-bar');
@@ -3168,12 +3165,28 @@
     const [y, m, d] = String(key || '').split('-');
     return m && d ? `${parseInt(m,10)}/${parseInt(d,10)}` : '';
   }
+  // 月曆可以往前翻：0 = 這個月，1 = 上個月……最早翻到有紀錄的那個月
+  let calendarMonthsBack = 0;
+  function earliestRecordMonthsBack() {
+    const keys = [state.log, state.bingoBonuses, state.afterSchoolLog, state.dailyReflections]
+      .flatMap(obj => Object.keys(obj || {}))
+      .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k))
+      .sort();
+    if (!keys.length) return 0;
+    const [y, m] = keys[0].split('-').map(Number);
+    const now = new Date();
+    return Math.max(0, (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m));
+  }
   function renderCalendar() {
     const wrap = document.getElementById('mine-calendar');
     if (!wrap) return;
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const maxBack = earliestRecordMonthsBack();
+    calendarMonthsBack = Math.min(Math.max(0, calendarMonthsBack), maxBack);
+    const shown = new Date();
+    shown.setDate(1);
+    shown.setMonth(shown.getMonth() - calendarMonthsBack);
+    const year = shown.getFullYear();
+    const month = shown.getMonth();
     const monthName = `${year} 年 ${month+1} 月`;
     const firstDay = new Date(year, month, 1);
     const lastDay  = new Date(year, month+1, 0);
@@ -3217,13 +3230,19 @@
 
     wrap.innerHTML = `
       <div class="mine-cal-head">
-        <div class="mine-cal-month">${monthName}</div>
+        <div class="mine-cal-nav">
+          <button type="button" class="mine-cal-arrow" data-cal-prev aria-label="上個月" ${calendarMonthsBack >= maxBack ? 'disabled' : ''}>◀</button>
+          <div class="mine-cal-month">${monthName}</div>
+          <button type="button" class="mine-cal-arrow" data-cal-next aria-label="下個月" ${calendarMonthsBack === 0 ? 'disabled' : ''}>▶</button>
+        </div>
         <div class="mine-cal-legend">
           少 <i style="background:#FFF3EE"></i><i style="background:#F7DCD1"></i><i style="background:#EBB95E"></i><i style="background:#e89a6a"></i><i style="background:var(--orange)"></i> 多
         </div>
       </div>
       <div class="mine-cal-grid">${cells}</div>
     `;
+    wrap.querySelector('[data-cal-prev]').onclick = () => { calendarMonthsBack += 1; renderCalendar(); };
+    wrap.querySelector('[data-cal-next]').onclick = () => { calendarMonthsBack -= 1; renderCalendar(); };
   }
 
   /* ---------- event delegation ---------- */
@@ -3477,11 +3496,11 @@
     };
     el.querySelector('[data-welcome-help]').onclick = openBackupHelpModal;
   }
-  // 首頁公告列：一次露出一則、每 5 秒換下一則、最多 3 則。
+  // 首頁公告列：一次露出一則、每 10 秒換下一則、最多 3 則。
   // 按 ✕ 只關掉那一則，以後不再出現；新增公告時換一個新的 id 就會重新出現。
   const NEWS_DISMISSED_KEY = 'squirrel-news-dismissed-v1';
   const NEWS_MAX = 3;
-  const NEWS_INTERVAL = 5000;
+  const NEWS_INTERVAL = 10000;
   function newsItems() {
     return [
       { id: 'app-coming-2026', badge: 'NEW', text: '松鼠橡實 App 版即將推出！', webOnly: true, open: openAppTeaserModal },

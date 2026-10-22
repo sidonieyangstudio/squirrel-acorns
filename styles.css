@@ -2280,3 +2280,15 @@ body.on-welcome { overflow: hidden; }
 .news-dots[hidden] { display: none; }
 .news-dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: rgba(218,132,79,0.28); cursor: pointer; }
 .news-dot.active { background: var(--orange); width: 16px; border-radius: 999px; }
+
+/* 月曆 · 左右切換月份 */
+.mine-cal-nav { display: flex; align-items: center; gap: 6px; }
+.mine-cal-arrow { width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: rgba(218,132,79,0.12); color: var(--orange); font-size: 10px; cursor: pointer; }
+.mine-cal-arrow:disabled { background: transparent; color: rgba(94,84,83,0.22); cursor: default; }
+
+/* 書封 · 封面貼紙調淡、「集滿了」改放在進度下面，不壓到圖案 */
+.sticker-book .sticker-book-cover:not(.silhouette) img { opacity: 0.6; filter: saturate(0.55); }
+.sticker-book > .sticker-book-tag.full { position: static; margin-top: 2px; font-size: 9px; padding: 1px 6px; }
+.sticker-book { padding-top: 6%; padding-bottom: 7%; overflow: hidden; }
+.sticker-book .sticker-book-cover { max-width: 38px; }
+.sticker-book > .sticker-book-tag.full { margin-top: 1px; line-height: 1.4; }
