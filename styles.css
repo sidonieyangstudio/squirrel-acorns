@@ -2292,3 +2292,4 @@ body.on-welcome { overflow: hidden; }
 .sticker-book { padding-top: 6%; padding-bottom: 7%; overflow: hidden; }
 .sticker-book .sticker-book-cover { max-width: 38px; }
 .sticker-book > .sticker-book-tag.full { margin-top: 1px; line-height: 1.4; }
+.sticker-book .sticker-book-cover:not(.silhouette) img { opacity: 0.9; filter: saturate(0.9); }

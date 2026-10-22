@@ -3143,8 +3143,9 @@
           <button type="button" class="sticker-book${item.full ? ' full' : ''}" data-open-book="${escAttr(item.id)}">
             <span class="sticker-book-cover${item.collectedCount ? '' : ' silhouette'}">${stickerIconHtml(item.cover, 48)}</span>
             <span class="sticker-book-name">${escHtml(item.label)}</span>
-            <span class="sticker-book-progress">${item.collectedCount}/${item.total}</span>
-            ${item.full ? '<em class="sticker-book-tag full">集滿了</em>' : ''}
+            ${item.full
+              ? '<em class="sticker-book-tag full">集滿了</em>'
+              : `<span class="sticker-book-progress">${item.collectedCount}/${item.total}</span>`}
           </button>
         `).join('')}
       </div>
