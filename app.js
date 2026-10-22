@@ -3329,7 +3329,7 @@
 
         <h4>素材與授權</h4>
         <ul>
-          <li>松鼠插圖：<b>Freepik</b> 素材，依付費授權使用。</li>
+          <li>松鼠插圖與 App 圖示：歐的樂星球製作（使用 AI 繪圖工具輔助）。</li>
           <li>小圖示：<b>Lucide</b>（ISC 授權）、<b>Phosphor Icons</b>（MIT 授權）。</li>
           <li>貼紙圖案：All emojis designed by <b>OpenMoji</b> (openmoji.org), the open-source emoji and icon project. License: CC BY-SA 4.0（creativecommons.org/licenses/by-sa/4.0）</li>
           <li>字型：<b>Chiron GoRound TC</b>，採用 SIL Open Font License 1.1 授權。</li>
