@@ -2249,3 +2249,17 @@ body.on-welcome { overflow: hidden; }
 /* 小回顧 · 松鼠表情臉 */
 .reflection-face-img { width: 52px; height: 52px; object-fit: contain; display: block; margin: 0 auto 2px; }
 .sticker-current { margin-bottom: 18px; padding: 14px 12px 12px; border-radius: 18px; border: 2px solid #DA844F; background: rgba(218,132,79,0.05); }
+
+/* 書架 · 小書造型（assets/sticker-book.webp 是空白書，貼紙和書名疊在封面上） */
+.sticker-shelf { gap: 14px 12px; }
+.sticker-book {
+  aspect-ratio: 360 / 330; max-width: 100%;
+  padding: 9% 9% 9% 15%;
+  border: 0; border-radius: 0; box-shadow: none;
+  background: url("assets/sticker-book.webp") center / 100% 100% no-repeat;
+  align-content: center; gap: 2px;
+}
+.sticker-book:focus-visible { outline: 2px solid #DA844F; outline-offset: 4px; border-radius: 12px; }
+.sticker-book .sticker-book-cover { width: 54px; height: 54px; background: none; border-radius: 0; }
+.sticker-book .sticker-book-cover img { width: 50px; height: 50px; }
+.sticker-book > .sticker-book-tag.full { top: 12%; right: 11%; }
