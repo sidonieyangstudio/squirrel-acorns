@@ -1,5 +1,5 @@
 // PWA service worker — network-first（線上永遠抓最新，離線回 cache）
-const CACHE = 'squirrel-points-v21';
+const CACHE = 'squirrel-points-v22';
 const SHELL = [
   './',
   './index.html',
@@ -12,9 +12,10 @@ const SHELL = [
   './reflection-rules.js',
   './app.js',
   './manifest.json',
-  './assets/squirrel-normal.svg',
-  './assets/squirrel-happy.svg',
-  './assets/squirrel-cheer.svg',
+  './assets/squirrel-normal.webp',
+  './assets/squirrel-happy.webp',
+  './assets/squirrel-cheer.webp',
+  './assets/squirrel-run.webp',
   './assets/stickers/daily/1F308.svg',
   './assets/stickers/daily/1F33A.svg',
   './assets/stickers/daily/1F344.svg',
