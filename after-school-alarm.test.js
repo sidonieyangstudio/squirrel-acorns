@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { nextAlarmPhase, resolveAlarmPhaseId, toggleAlarmReady } = require('./after-school-alarm.js');
 
 const plan = [
-  { id: 'ticket', title: '遊戲機門票', reminderTime: '18:15', tasks: [{ id: 'story' }] },
+  { id: 'ticket', title: '桌遊門票', reminderTime: '18:15', tasks: [{ id: 'story' }] },
   { id: 'evening', title: '晚上整理', reminderTime: '20:15', tasks: [{ id: 'brush' }] }
 ];
 

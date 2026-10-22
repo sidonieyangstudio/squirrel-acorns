@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=101">
+<link rel="stylesheet" href="styles.css?v=102">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -51,13 +51,16 @@
     </header>
 
     <main class="list-section">
-      <div class="app-teaser" id="app-teaser" hidden>
-        <button type="button" class="app-teaser-main" id="app-teaser-open">
-          <span class="app-teaser-badge">NEW</span>
-          <span class="app-teaser-text">松鼠橡實 App 版即將推出！</span>
-          <span class="app-teaser-go">看看 ➜</span>
-        </button>
-        <button type="button" class="app-teaser-close" id="app-teaser-close" aria-label="關掉這則提示">✕</button>
+      <div class="news-bar" id="news-bar" hidden>
+        <div class="app-teaser" aria-live="polite">
+          <button type="button" class="app-teaser-main" id="news-open">
+            <span class="app-teaser-badge" id="news-badge">NEW</span>
+            <span class="app-teaser-text" id="news-text"></span>
+            <span class="app-teaser-go">看看 ➜</span>
+          </button>
+          <button type="button" class="app-teaser-close" id="news-close" aria-label="關掉這則公告">✕</button>
+        </div>
+        <div class="news-dots" id="news-dots"></div>
       </div>
       <section class="today-mode-card">
         <div class="mode-card-icon">
@@ -99,13 +102,13 @@
         <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
       </button>
       <div class="after-school-time" id="after-school-now">現在</div>
-      <div class="after-school-title" id="after-school-title">遊戲機門票＋睡前故事</div>
-      <div class="after-school-sub" id="after-school-sub">先拿遊戲機門票，再把晚上整理好</div>
+      <div class="after-school-title" id="after-school-title">桌遊門票＋睡前故事</div>
+      <div class="after-school-sub" id="after-school-sub">先拿桌遊門票，再把晚上整理好</div>
       <button class="after-school-alarm-toggle" id="btn-after-school-alarm" type="button">鬧鐘聲已關閉</button>
 
       <div class="after-school-ticket" id="after-school-ticket">
         <div>
-          <div class="ticket-title" id="after-school-ticket-title">遊戲機門票</div>
+          <div class="ticket-title" id="after-school-ticket-title">桌遊門票</div>
           <div class="ticket-sub" id="after-school-ticket-sub">中文故事、練琴還沒完成</div>
           <div class="ticket-reminder" id="after-school-ticket-reminder">6:15 提醒</div>
         </div>
@@ -372,7 +375,7 @@
 <script src="reflection-rules.js?v=7"></script>
 <script src="backup-rules.js?v=1"></script>
 <script src="squirrel-mood.js?v=1"></script>
-<script src="app.js?v=95"></script>
+<script src="app.js?v=96"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

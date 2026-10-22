@@ -33,7 +33,7 @@
         {
           id: 'chinese-story',
           title: '中文故事 15 分鐘',
-          note: '遊戲機門票條件 1/2',
+          note: '桌遊門票條件 1/2',
           icon: 'ic-bookopen',
           points: 5,
           ticket: true
@@ -41,7 +41,7 @@
         {
           id: 'piano',
           title: '練琴 10 分鐘',
-          note: '完成後開遊戲機門票',
+          note: '完成後開桌遊門票',
           icon: 'ic-piano',
           points: 5,
           ticket: true,

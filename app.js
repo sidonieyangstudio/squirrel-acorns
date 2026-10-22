@@ -42,7 +42,7 @@
     },
     {
       id: 'ticket',
-      title: '遊戲機門票',
+      title: '桌遊門票',
       time: '3:30–6:45',
       reminderTime: '18:15',
       tasks: [
@@ -63,15 +63,15 @@
     }
   ];
   const DEFAULT_AFTER_SCHOOL_SETTINGS = {
-    pageTitle: '遊戲機門票＋睡前故事',
-    pageSubtitle: '先拿遊戲機門票，再把晚上整理好',
+    pageTitle: '桌遊門票＋睡前故事',
+    pageSubtitle: '先拿桌遊門票，再把晚上整理好',
     finalRewardName: '得到睡前故事',
     finalRewardCardTitle: '睡前故事',
     finalRewardCardSub: ''
   };
   const OLD_AFTER_SCHOOL_DEFAULTS = {
-    pageTitle: '遊戲機門票',
-    pageSubtitle: '先拿遊戲機門票，再把晚上收好',
+    pageTitle: '桌遊門票',
+    pageSubtitle: '先拿桌遊門票，再把晚上收好',
     phaseTitles: {
       decompress: '回家卸載',
       evening: '晚上收好'
@@ -780,11 +780,18 @@
     return /^\d{2}:\d{2}$/.test(text) ? text : fallback;
   }
 
+  // 2026-10-22 「遊戲機門票」改名「桌遊門票」：舊資料裡存的字一起換掉
+  function renameToBoardGame(text) {
+    return typeof text === 'string' ? text.replace(/遊戲機/g, '桌遊') : text;
+  }
   function afterSchoolSettings() {
     state.afterSchoolSettings = {
       ...DEFAULT_AFTER_SCHOOL_SETTINGS,
       ...(state.afterSchoolSettings || {})
     };
+    ['pageTitle', 'pageSubtitle', 'ticketTitle'].forEach(key => {
+      state.afterSchoolSettings[key] = renameToBoardGame(state.afterSchoolSettings[key]);
+    });
     if (state.afterSchoolSettings.pageTitle === OLD_AFTER_SCHOOL_DEFAULTS.pageTitle) {
       state.afterSchoolSettings.pageTitle = DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle;
     }
@@ -793,7 +800,7 @@
     }
     state.afterSchoolSettings.pageTitle = String(state.afterSchoolSettings.pageTitle || DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle).trim();
     state.afterSchoolSettings.pageSubtitle = String(
-      state.afterSchoolSettings.pageSubtitle || `先拿${state.afterSchoolSettings.ticketTitle || '遊戲機門票'}，再把晚上收好`
+      state.afterSchoolSettings.pageSubtitle || `先拿${state.afterSchoolSettings.ticketTitle || '桌遊門票'}，再把晚上收好`
     ).trim();
     state.afterSchoolSettings.finalRewardName = String(
       state.afterSchoolSettings.finalRewardName || DEFAULT_AFTER_SCHOOL_SETTINGS.finalRewardName
@@ -820,7 +827,7 @@
   }
 
   function normalizeAfterSchoolPlan(plan = state.afterSchoolPlan) {
-    const legacyTicketTitle = state.afterSchoolSettings && state.afterSchoolSettings.ticketTitle;
+    const legacyTicketTitle = renameToBoardGame(state.afterSchoolSettings && state.afterSchoolSettings.ticketTitle);
     const legacyReminderTime = state.afterSchoolSettings && state.afterSchoolSettings.reminderTime;
     const source = Array.isArray(plan) ? plan : [];
     const normalized = DEFAULT_AFTER_SCHOOL_PLAN.map((defPhase, phaseIndex) => {
@@ -828,8 +835,8 @@
       const rawTasks = Array.isArray(raw.tasks) ? raw.tasks : defPhase.tasks;
       let tasks = rawTasks.map(task => ({
         id: task.id || h(),
-        title: String(task.title || '未命名任務').trim(),
-        note: String(task.note || '').trim(),
+        title: renameToBoardGame(String(task.title || '未命名任務').trim()),
+        note: renameToBoardGame(String(task.note || '').trim()),
         icon: ICON_LIST.includes(task.icon) ? task.icon : defPhase.tasks[0]?.icon || 'ic-star',
         points: Math.max(1, parseInt(task.points, 10) || 1)
       }));
@@ -842,7 +849,7 @@
       if (defPhase.id === 'ticket' && !raw.reminderTime && legacyReminderTime) {
         reminderTime = normalizeClock(legacyReminderTime, defPhase.reminderTime || '');
       }
-      const rawTitle = stripPhasePrefix(raw.title);
+      const rawTitle = renameToBoardGame(stripPhasePrefix(raw.title));
       const upgradedTitle = rawTitle === OLD_AFTER_SCHOOL_DEFAULTS.phaseTitles[defPhase.id]
         ? defPhase.title
         : rawTitle;
@@ -865,7 +872,7 @@
 
   function afterSchoolTicketTitle(plan = afterSchoolPlan()) {
     const ticketPhase = plan.find(phase => phase.id === 'ticket');
-    return stripPhasePrefix(ticketPhase && ticketPhase.title) || '遊戲機門票';
+    return stripPhasePrefix(ticketPhase && ticketPhase.title) || '桌遊門票';
   }
 
   function cleanAfterSchoolTaskTitle(title) {
@@ -2110,7 +2117,7 @@
       <form id="after-school-settings-form">
         <div class="field">
           <label>頁面主標題</label>
-          <input name="pageTitle" maxlength="24" value="${escAttr(cfg.pageTitle)}" placeholder="例：遊戲機門票" />
+          <input name="pageTitle" maxlength="24" value="${escAttr(cfg.pageTitle)}" placeholder="例：桌遊門票" />
         </div>
         <div class="field">
           <label>主標題下方文字</label>
@@ -3470,21 +3477,94 @@
     };
     el.querySelector('[data-welcome-help]').onclick = openBackupHelpModal;
   }
-  // 網頁版預告：首頁小橫幅＋備份區多一句；App 上架後改成上架公告（另外做）
-  function setupAppTeaser() {
-    if (isNativeApp) return;
-    const sub = document.getElementById('mine-backup-sub');
-    if (sub) sub.innerHTML = '資料只存在這支手機。<br>先備份一份存到「檔案」，以後換手機或改用 App 版都能搬過去。';
-    const bar = document.getElementById('app-teaser');
-    let dismissed = false;
-    try { dismissed = localStorage.getItem(APP_TEASER_KEY) === '1'; } catch (e) {}
-    if (!bar || dismissed) return;
-    bar.hidden = false;
-    document.getElementById('app-teaser-close').onclick = () => {
-      bar.hidden = true;
-      try { localStorage.setItem(APP_TEASER_KEY, '1'); } catch (e) {}
+  // 首頁公告列：一次露出一則、每 5 秒換下一則、最多 3 則。
+  // 按 ✕ 只關掉那一則，以後不再出現；新增公告時換一個新的 id 就會重新出現。
+  const NEWS_DISMISSED_KEY = 'squirrel-news-dismissed-v1';
+  const NEWS_MAX = 3;
+  const NEWS_INTERVAL = 5000;
+  function newsItems() {
+    return [
+      { id: 'app-coming-2026', badge: 'NEW', text: '松鼠橡實 App 版即將推出！', webOnly: true, open: openAppTeaserModal },
+      { id: 'special-stickers-2026', badge: '新功能', text: '節慶限定貼紙和生日週來了！', open: openStickerNewsModal }
+    ];
+  }
+  function dismissedNews() {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(NEWS_DISMISSED_KEY) || '[]'); } catch (e) {}
+    try { if (localStorage.getItem(APP_TEASER_KEY) === '1') list.push('app-coming-2026'); } catch (e) {}
+    return Array.isArray(list) ? list : [];
+  }
+  function setupNewsBar() {
+    if (!isNativeApp) {
+      const sub = document.getElementById('mine-backup-sub');
+      if (sub) sub.innerHTML = '資料只存在這支手機。<br>先備份一份存到「檔案」，以後換手機或改用 App 版都能搬過去。';
+    }
+    const bar = document.getElementById('news-bar');
+    if (!bar) return;
+    const textEl = document.getElementById('news-text');
+    const badgeEl = document.getElementById('news-badge');
+    const dotsEl = document.getElementById('news-dots');
+    let index = 0;
+    let timer = null;
+    const visible = () => {
+      const hidden = dismissedNews();
+      return newsItems()
+        .filter(item => !(item.webOnly && isNativeApp) && !hidden.includes(item.id))
+        .slice(0, NEWS_MAX);
     };
-    document.getElementById('app-teaser-open').onclick = openAppTeaserModal;
+    const show = () => {
+      const items = visible();
+      if (!items.length) { bar.hidden = true; clearInterval(timer); return; }
+      bar.hidden = false;
+      index = index % items.length;
+      const item = items[index];
+      textEl.textContent = item.text;
+      badgeEl.textContent = item.badge;
+      dotsEl.hidden = items.length < 2;
+      dotsEl.innerHTML = items.map((_, i) => `<button type="button" class="news-dot${i === index ? ' active' : ''}" data-news-dot="${i}" aria-label="第 ${i + 1} 則公告"></button>`).join('');
+      dotsEl.querySelectorAll('[data-news-dot]').forEach(dot => {
+        dot.onclick = () => { index = Number(dot.dataset.newsDot); show(); restart(); };
+      });
+    };
+    const restart = () => {
+      clearInterval(timer);
+      if (visible().length > 1) timer = setInterval(() => { index += 1; show(); }, NEWS_INTERVAL);
+    };
+    document.getElementById('news-open').onclick = () => {
+      const item = visible()[index];
+      if (item) item.open();
+    };
+    document.getElementById('news-close').onclick = () => {
+      const item = visible()[index];
+      if (!item) return;
+      const list = dismissedNews().concat(item.id);
+      try { localStorage.setItem(NEWS_DISMISSED_KEY, JSON.stringify(list)); } catch (e) {}
+      show();
+      restart();
+    };
+    show();
+    restart();
+  }
+  function openStickerNewsModal() {
+    openModal(`
+      <h3 class="modal-title">節慶限定貼紙和生日週</h3>
+      <div class="about-body">
+        <p>每年過年、暑假、中秋、萬聖節、聖誕節，完成「今天小回顧」抽到的會是節慶限定貼紙。拿到的會永遠收在貼紙書架上，沒拿到的明年再來收集。</p>
+        <p>家長也可以在「孩子檔案」填孩子的生日（只要月和日），生日前後一週會抽到生日限定貼紙，生日當天松鼠還會說生日快樂。</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" data-cancel>知道了</button>
+        <button type="button" class="btn btn-primary" data-go-stickers>去看我的貼紙</button>
+      </div>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('[data-go-stickers]').onclick = () => {
+      closeModal();
+      showScreen('screen-mine');
+      if (typeof renderMine === 'function') renderMine();
+      setTimeout(() => document.getElementById('mine-sticker-list').scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    };
   }
   function openAppTeaserModal() {
     openModal(`
@@ -3649,7 +3729,7 @@
   document.getElementById('btn-about').onclick = openAboutModal;
   document.getElementById('btn-mine-backup').onclick = exportBackup;
   setupWelcome();
-  setupAppTeaser();
+  setupNewsBar();
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
   document.getElementById('btn-go-today').onclick     = () => goToScreen('today');

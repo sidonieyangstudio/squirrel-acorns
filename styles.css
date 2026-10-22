@@ -2263,3 +2263,20 @@ body.on-welcome { overflow: hidden; }
 .sticker-book .sticker-book-cover { width: 54px; height: 54px; background: none; border-radius: 0; }
 .sticker-book .sticker-book-cover img { width: 50px; height: 50px; }
 .sticker-book > .sticker-book-tag.full { top: 12%; right: 11%; }
+
+/* 書架 · 一行三本，第四本起換行 */
+.sticker-shelf { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
+.sticker-book { padding: 8% 7% 9% 15%; gap: 1px; }
+.sticker-book .sticker-book-cover { width: 70%; height: auto; aspect-ratio: 1; max-width: 46px; }
+.sticker-book .sticker-book-cover img { width: 100%; height: 100%; }
+.sticker-book-name { font-size: 12px; line-height: 1.25; }
+.sticker-book-progress { font-size: 11px; }
+.sticker-book > .sticker-book-tag.full { top: 7%; right: 6%; font-size: 9px; padding: 1px 5px; }
+
+/* 首頁公告列（輪播） */
+.news-bar { margin: 0 0 14px; }
+.news-bar .app-teaser { margin: 0; }
+.news-dots { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
+.news-dots[hidden] { display: none; }
+.news-dot { width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: rgba(218,132,79,0.28); cursor: pointer; }
+.news-dot.active { background: var(--orange); width: 16px; border-radius: 999px; }
