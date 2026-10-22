@@ -11,6 +11,9 @@
   const KEY = 'squirrel-points-v3';
   const KEY_OLD = 'squirrel-points-v2';
   const ACTIVE_CHILD_KEY = 'squirrel-active-child-v1';
+  // 第一次打開（手機裡還沒有任何松鼠橡實資料）才顯示歡迎畫面；要在任何存檔之前判斷
+  let isFirstRun = false;
+  try { isFirstRun = !localStorage.getItem(KEY) && !localStorage.getItem(KEY_OLD); } catch (e) {}
   const todayKey = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -3270,6 +3273,70 @@
     saveAll();
     window.location.reload();
   }
+  // 需要家長確認的動作：家長模式中直接做；有設密碼就先輸入；沒設密碼就直接做
+  function requireParentPin(onOk) {
+    if (parentMode || !appState.parentPin) { onOk(); return; }
+    openModal(`
+      <h3 class="modal-title">請家長輸入密碼</h3>
+      <p class="modal-sub">確認是家長再繼續</p>
+      <form id="pin-gate-form">
+        <div class="field">
+          <input name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autofocus placeholder="••••" style="text-align:center; font-size:24px; letter-spacing:0.5em;" />
+        </div>
+        <div class="modal-actions" style="margin-top:18px;">
+          <button type="button" class="btn" data-cancel>取消</button>
+          <button type="submit" class="btn btn-primary">送出</button>
+        </div>
+      </form>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('#pin-gate-form').onsubmit = (e) => {
+      e.preventDefault();
+      if (e.target.pin.value.trim() !== appState.parentPin) { shakeModal(); return; }
+      closeModal();
+      onOk();
+    };
+  }
+  function openBackupHelpModal() {
+    openModal(`
+      <h3 class="modal-title">從網頁版搬資料過來</h3>
+      <div class="about-body">
+        <p><b>第一步：在網頁版備份</b></p>
+        <ul>
+          <li>用原本的方式打開網頁版松鼠橡實。</li>
+          <li>點下方「我的」，拉到最下面，按「備份資料」。</li>
+          <li>輸入家長密碼後，選「儲存到檔案」。</li>
+        </ul>
+        <p><b>第二步：在這裡還原</b></p>
+        <ul>
+          <li>回到這個畫面，按「我用過網頁版，把資料搬過來」。</li>
+          <li>選剛剛存的「松鼠橡實備份」檔案就完成了。</li>
+        </ul>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-cancel>知道了</button>
+      </div>
+    `);
+    document.getElementById('modal').querySelector('[data-cancel]').onclick = closeModal;
+  }
+  function setupWelcome() {
+    const el = document.getElementById('welcome');
+    if (!el || !isFirstRun) return;
+    el.hidden = false;
+    document.body.classList.add('on-welcome');
+    const close = () => { el.hidden = true; document.body.classList.remove('on-welcome'); };
+    // 按開始就先存一次，下次打開才不會又看到歡迎畫面
+    el.querySelector('[data-welcome-start]').onclick = () => { saveAll(); close(); };
+    const fileInput = el.querySelector('[data-welcome-file]');
+    el.querySelector('[data-welcome-import]').onclick = () => fileInput.click();
+    fileInput.onchange = () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = '';
+      if (file) importBackup(file);
+    };
+    el.querySelector('[data-welcome-help]').onclick = openBackupHelpModal;
+  }
   function openAboutModal() {
     openModal(`
       <h3 class="modal-title">關於松鼠橡實</h3>
@@ -3410,6 +3477,8 @@
   })();
   document.getElementById('parent-toggle').onclick = openParentModal;
   document.getElementById('btn-about').onclick = openAboutModal;
+  document.getElementById('btn-mine-backup').onclick = () => requireParentPin(exportBackup);
+  setupWelcome();
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
   document.getElementById('btn-go-today').onclick     = () => goToScreen('today');

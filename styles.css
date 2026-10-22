@@ -505,7 +505,7 @@ body.parent-mode .greet-row { padding-right: 0; }
   height: 132px;
   object-fit: contain;
   flex-shrink: 0;
-  margin: -8px -6px -36px auto;
+  margin: -16px 6px -28px auto;
   filter: drop-shadow(0 8px 20px rgba(94,84,83,0.12));
   animation: breathe 3.2s ease-in-out infinite;
 }
@@ -987,7 +987,7 @@ body.parent-mode .greet-row { padding-right: 0; }
 .points-card-squirrel.cheer {
   width: 118px !important; height: 118px !important;
   object-fit: contain;
-  margin: -4px 4px -32px -6px;
+  margin: -10px 4px -26px -6px;
 }
 .points-card-squirrel.cheer.hop,
 .unlock-squirrel-circle img.hop {
@@ -1033,7 +1033,7 @@ body.parent-mode .greet-row { padding-right: 0; }
 .points-card-squirrel.mine {
   width: 128px !important; height: 128px !important;
   object-fit: contain;
-  margin: -2px -2px -30px 0;
+  margin: -8px -2px -24px 0;
 }
 .points-card-flip { padding: 22px 18px; min-height: 130px; }
 .points-card-flip .stat-value { font-size: 24px; }
@@ -1192,7 +1192,7 @@ body.parent-mode .greet-row { padding-right: 0; }
   position: relative; z-index: 10;
   animation: bounce-soft 2.4s ease-in-out infinite;
 }
-.unlock-squirrel-circle img { width: 174px; height: 174px; object-fit: contain; }
+.unlock-squirrel-circle img { width: 174px; height: 174px; object-fit: contain; margin-top: 10px; }
 @keyframes bounce-soft {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.025); }
@@ -2175,3 +2175,18 @@ body.child-mode [data-delete-reward] { display: none !important; }
 .about-body h4 { font-size: 13px; font-weight: 800; margin: 16px 0 6px; color: var(--ink); }
 .about-body ul { margin: 0 0 8px; padding-left: 18px; }
 .about-body li { margin-bottom: 4px; }
+
+/* 我的小本本 · 資料備份 */
+.mine-backup { margin-top: 28px; }
+
+/* 首次打開 · 歡迎畫面 */
+.welcome { position: fixed; inset: 0; z-index: 900; background: var(--cream, #FFF3EE); display: grid; place-items: center; padding: 24px 16px; overflow-y: auto; }
+.welcome[hidden] { display: none; }
+body.on-welcome { overflow: hidden; }
+.welcome-inner { width: 100%; max-width: 360px; text-align: center; }
+.welcome-icon { width: 120px; height: 120px; border-radius: 28px; box-shadow: 0 12px 28px rgba(94,84,83,0.16); animation: breathe 3.2s ease-in-out infinite; }
+.welcome-title { font-size: 28px; font-weight: 800; color: var(--ink); margin: 22px 0 6px; letter-spacing: 0.06em; }
+.welcome-sub { font-size: 14px; color: var(--ink-soft); margin: 0 0 32px; }
+.welcome-actions { display: grid; gap: 12px; }
+.welcome-help { background: none; border: 0; font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; padding: 6px; }
+.welcome-brand { margin-top: 36px; font-size: 12px; color: var(--ink-soft); letter-spacing: 0.08em; }
