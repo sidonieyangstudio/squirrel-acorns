@@ -2137,6 +2137,26 @@ body.child-mode [data-delete-reward] { display: none !important; }
   display: grid;
   gap: 8px;
 }
+/* 往左滑露出刪除：紅色按鈕藏在任務列後面 */
+.swipe-row {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.swipe-delete {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 84px;
+  border: 0; border-radius: 0 14px 14px 0;
+  background: var(--pink);
+  color: var(--white);
+  font-size: 14px; font-weight: 700;
+}
+.swipe-row .after-school-editor-task {
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  transition: transform .2s var(--ease);
+}
 .after-school-editor-task {
   width: 100%;
   display: flex;

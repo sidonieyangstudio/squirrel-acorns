@@ -1157,6 +1157,19 @@
     } catch (e) {}
   }
 
+  // 家長編輯放學設定或任務後，今天已經過了的提醒不補響（只響之後的時間），
+  // 否則改完一按儲存，鈴聲和提醒視窗就會立刻跳出來
+  function silencePassedRemindersAfterEdit() {
+    const daily = afterSchoolReminderDaily();
+    afterSchoolPlan().forEach(phase => {
+      if (phase.id !== 'ticket' && phase.id !== 'evening') return;
+      if (!phase.reminderTime || !isAfterSchoolReminderDue(phase.reminderTime)) return;
+      const entry = daily[phase.id];
+      if (entry && entry.active) return;
+      daily[phase.id] = { dismissed: true, silencedByEdit: true };
+    });
+  }
+
   function afterSchoolTodayLog() {
     const today = todayKey();
     state.afterSchoolLog = state.afterSchoolLog || {};
@@ -2306,6 +2319,8 @@
               ` : ''}
               <div class="after-school-editor-task-list">
                 ${phase.tasks.map(task => `
+                  <div class="swipe-row">
+                  <button type="button" class="swipe-delete" data-swipe-delete aria-label="刪除${escAttr(task.title)}">刪除</button>
                   <button type="button" class="after-school-editor-task" data-edit-after-school-task="${task.id}">
                     <span class="after-school-editor-task-icon">${iconSvg(task.icon, 20, '#5E5453')}</span>
                     <span class="after-school-editor-task-text">
@@ -2314,6 +2329,7 @@
                     </span>
                     <span class="after-school-editor-task-edit">編輯</span>
                   </button>
+                  </div>
                 `).join('')}
               </div>
             </section>
@@ -2336,6 +2352,7 @@
         if (task) openAfterSchoolTaskForm(task.phaseId, task);
       };
     });
+    bindSwipeToDelete(root);
     root.querySelector('#after-school-settings-form').onsubmit = (e) => {
       e.preventDefault();
       const f = e.target;
@@ -2356,12 +2373,84 @@
       };
       state.afterSchoolPlan = nextPlan;
       state.afterSchoolReminderLog = {};
+      silencePassedRemindersAfterEdit();
       save();
       closeModal();
       renderAfterSchool();
       toast('放學設定已更新');
       askNativeReminderPermission();
     };
+  }
+
+  function deleteAfterSchoolTask(phaseId, task) {
+    if (!confirm(`刪除「${task.title}」？`)) return;
+    state.afterSchoolPlan = afterSchoolPlan().map(item => {
+      if (item.id !== phaseId) return item;
+      return { ...item, tasks: item.tasks.filter(x => x.id !== task.id) };
+    });
+    Object.values(state.afterSchoolLog || {}).forEach(log => delete log[task.id]);
+    state.afterSchoolPlan = normalizeAfterSchoolPlan(state.afterSchoolPlan);
+    silencePassedRemindersAfterEdit();
+    save();
+    renderAfterSchool();
+    openAfterSchoolSettingsForm();
+  }
+
+  // 放學設定的任務列：往左滑露出「刪除」，點刪除會再確認一次；滑開時點一下列本身只會收回
+  function bindSwipeToDelete(root) {
+    const OPEN_X = -84;
+    let openRow = null;
+    const close = (row) => { if (row) { row.style.transform = ''; row.classList.remove('swiped'); } if (openRow === row) openRow = null; };
+    root.querySelectorAll('.swipe-row').forEach(wrap => {
+      const row = wrap.querySelector('.after-school-editor-task');
+      let startX = 0, startY = 0, dx = 0, tracking = false, horizontal = null;
+      row.addEventListener('touchstart', (e) => {
+        if (openRow && openRow !== row) close(openRow);
+        const t = e.touches[0];
+        startX = t.clientX; startY = t.clientY; dx = 0; tracking = true; horizontal = null;
+        row.style.transition = 'none';
+      }, { passive: true });
+      row.addEventListener('touchmove', (e) => {
+        if (!tracking) return;
+        const t = e.touches[0];
+        const mx = t.clientX - startX, my = t.clientY - startY;
+        if (horizontal === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) horizontal = Math.abs(mx) > Math.abs(my);
+        if (!horizontal) return;
+        e.preventDefault();
+        const base = row.classList.contains('swiped') ? OPEN_X : 0;
+        dx = Math.max(OPEN_X - 20, Math.min(0, base + mx));
+        row.style.transform = `translateX(${dx}px)`;
+      }, { passive: false });
+      row.addEventListener('touchend', () => {
+        if (!tracking) return;
+        tracking = false;
+        row.style.transition = '';
+        if (!horizontal) return;
+        if (dx < OPEN_X / 2) {
+          row.style.transform = `translateX(${OPEN_X}px)`;
+          row.classList.add('swiped');
+          openRow = row;
+        } else {
+          close(row);
+        }
+        // 手指剛放開時系統可能補送一次點擊，短時間內忽略
+        row.dataset.justSwiped = '1';
+        setTimeout(() => { delete row.dataset.justSwiped; }, 350);
+      });
+      // 掛在外層的捕獲階段，才會比任務列自己的「打開編輯」先執行
+      wrap.addEventListener('click', (e) => {
+        if (!e.target.closest('.after-school-editor-task')) return;
+        if (row.dataset.justSwiped || row.classList.contains('swiped')) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+          if (!row.dataset.justSwiped) close(row);
+        }
+      }, true);
+      wrap.querySelector('[data-swipe-delete]').onclick = () => {
+        const task = afterSchoolTaskById(row.dataset.editAfterSchoolTask);
+        if (task) deleteAfterSchoolTask(task.phaseId, task);
+      };
+    });
   }
 
   function openAfterSchoolTaskForm(phaseId, task) {
@@ -2398,18 +2487,7 @@
     bindIconPicker(root);
     root.querySelector('[data-cancel]').onclick = openAfterSchoolSettingsForm;
     const delBtn = root.querySelector('[data-delete-after-school-task]');
-    if (delBtn) delBtn.onclick = () => {
-      if (!confirm(`刪除「${task.title}」？`)) return;
-      state.afterSchoolPlan = afterSchoolPlan().map(item => {
-        if (item.id !== phaseId) return item;
-        return { ...item, tasks: item.tasks.filter(x => x.id !== task.id) };
-      });
-      Object.values(state.afterSchoolLog || {}).forEach(log => delete log[task.id]);
-      state.afterSchoolPlan = normalizeAfterSchoolPlan(state.afterSchoolPlan);
-      save();
-      renderAfterSchool();
-      openAfterSchoolSettingsForm();
-    };
+    if (delBtn) delBtn.onclick = () => deleteAfterSchoolTask(phaseId, task);
     root.querySelector('#after-school-task-form').onsubmit = (e) => {
       e.preventDefault();
       const f = e.target;
@@ -2428,6 +2506,7 @@
         return { ...item, tasks };
       });
       state.afterSchoolPlan = normalizeAfterSchoolPlan(state.afterSchoolPlan);
+      silencePassedRemindersAfterEdit();
       save();
       renderAfterSchool();
       openAfterSchoolSettingsForm();
