@@ -215,6 +215,8 @@ body.parent-mode .header-tools { top: 14px; }
 }
 .squirrel-wrap img {
   width: 153px; height: 153px; object-fit: contain;
+  /* 往右一點，生日問候語（兩行比較長）才不會撞到松鼠 */
+  margin-left: 68px;
   animation: breathe 3.2s ease-in-out infinite;
   filter: drop-shadow(0 12px 28px rgba(94,84,83,0.18));
 }
@@ -1765,7 +1767,10 @@ body.child-mode [data-delete-reward] { display: none !important; }
   overscroll-behavior: contain;
 }
 /* 視窗變矮後內容要捲動，取消／儲存按鈕固定在視窗底部，不用捲到最下面才按得到 */
-.modal .modal-actions {
+/* 只固定「整個視窗最後面」的按鈕列；按鈕列後面還有內容的（例如家長設定下方的資料備份）不固定，
+   否則它和下面的白底會蓋住後面的內容 */
+#modal-body > .modal-actions:last-child,
+#modal-body > form:last-child > .modal-actions:last-child {
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -1778,7 +1783,8 @@ body.child-mode [data-delete-reward] { display: none !important; }
   .modal { max-height: 92vh; max-height: 92dvh; }
 }
 /* 按鈕下方補一條白底，蓋住視窗底部留白處露出的內容 */
-.modal .modal-actions::after {
+#modal-body > .modal-actions:last-child::after,
+#modal-body > form:last-child > .modal-actions:last-child::after {
   content: "";
   position: absolute; left: 0; right: 0; top: 100%;
   height: calc(env(safe-area-inset-bottom) + 30px);
@@ -2328,6 +2334,7 @@ body.child-mode [data-delete-reward] { display: none !important; }
 /* 我的小本本 · 資料備份 */
 .mine-backup { margin-top: 28px; }
 .mine-restore-hint { margin: 12px 0 0; }
+.mine-restore-hint ol { margin: 2px 0 0; padding: 0; list-style-position: inside; }
 
 /* 首次打開 · 歡迎畫面 */
 .welcome { position: fixed; inset: 0; z-index: 900; background: var(--cream, #FFF3EE); display: grid; place-items: center; padding: 24px 16px; overflow-y: auto; }
