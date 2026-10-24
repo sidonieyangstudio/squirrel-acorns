@@ -608,6 +608,8 @@ body.parent-mode .header-tools { top: 14px; }
   position: absolute;
   right: 58px;
   top: 16px;
+  height: 34px;
+  display: inline-flex; align-items: center;
   background: var(--white);
   color: var(--lotus-deep);
   border-radius: var(--pill);
@@ -618,12 +620,14 @@ body.parent-mode .header-tools { top: 14px; }
 }
 .after-school-settings-btn {
   position: absolute;
-  top: 20px;
-  right: 18px;
+  top: 17px;
+  right: 58px;
   background: rgba(255,255,255,.18);
   border-color: rgba(255,255,255,.55);
   color: var(--white);
 }
+/* 家長模式多了鉛筆：時間往左移，和鉛筆排成一排、等高置中，兩個都避開右上鎖頭 */
+body.parent-mode .after-school-time { right: 98px; }
 .after-school-title {
   margin-top: 12px;
   font-size: 28px;
@@ -679,6 +683,33 @@ body.parent-mode .header-tools { top: 14px; }
   font-weight: 500;
   line-height: 1.35;
 }
+/* 桌遊門票進度：每個門票任務一個圈圈（裡面是任務圖示），中間用箭頭接起來 */
+.ticket-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 4px;
+  margin-top: 10px;
+  --step-size: 40px;
+}
+.ticket-steps.many { --step-size: 32px; }
+.ticket-step {
+  width: var(--step-size); height: var(--step-size);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--pink-bg);
+  border: 1.5px solid var(--light-pink);
+  flex-shrink: 0;
+  transition: background .25s var(--ease), border-color .25s var(--ease);
+}
+.ticket-step.next { border-color: var(--orange); box-shadow: var(--ring-warm); }
+.ticket-step.done { background: var(--cheek); border-color: var(--cheek); }
+.ticket-step-arrow {
+  color: var(--light-pink);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.ticket-step-arrow.passed { color: var(--orange); }
 .ticket-reminder {
   display: flex;
   align-items: flex-start;

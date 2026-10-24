@@ -1509,6 +1509,28 @@
     return `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
   }
 
+  // 桌遊門票進度圈圈：完成的變深粉色，下一個要做的加橘色外框，走過的箭頭變橘色。
+  // 3 個以內圈圈 40px；4 個以上縮成 32px，一排放不下就自動換行
+  function renderTicketSteps(plan, log) {
+    const box = document.getElementById('after-school-ticket-steps');
+    if (!box) return;
+    const phase = plan.find(item => item.id === 'ticket');
+    const tasks = (phase && phase.tasks) || [];
+    const doneFlags = tasks.map(task => afterSchool.isAfterSchoolDone(log, task.id));
+    const nextIndex = doneFlags.indexOf(false);
+    const size = tasks.length > 3 ? 18 : 22;
+    const arrow = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>`;
+    box.classList.toggle('many', tasks.length > 3);
+    box.innerHTML = tasks.map((task, i) => {
+      const done = doneFlags[i];
+      const cls = done ? ' done' : (i === nextIndex ? ' next' : '');
+      const step = `<span class="ticket-step${cls}" title="${escAttr(task.title)}" aria-label="${escAttr(task.title)}${done ? '，已完成' : ''}">${iconSvg(task.icon, size, done ? '#FEFBF9' : '#a8725f')}</span>`;
+      const link = i < tasks.length - 1 ? `<span class="ticket-step-arrow${done ? ' passed' : ''}" aria-hidden="true">${arrow}</span>` : '';
+      return step + link;
+    }).join('');
+    box.hidden = tasks.length === 0;
+  }
+
   function scheduleAfterSchoolClock() {
     if (afterSchoolClockTimer) { clearInterval(afterSchoolClockTimer); afterSchoolClockTimer = null; }
     const screen = document.getElementById('screen-after-school');
@@ -1539,6 +1561,7 @@
     ticketSub.textContent = status.gameTicket.done
       ? `${ticketName}條件都完成了`
       : `已完成 ${status.gameTicket.doneCount}/${status.gameTicket.totalCount}`;
+    renderTicketSteps(plan, log);
     const reminderPhases = plan.filter(phase => (phase.id === 'ticket' || phase.id === 'evening') && phase.reminderTime);
     ticketReminder.innerHTML = reminderPhases.map(phase => {
       const done = isAfterSchoolPhaseDone(phase, log);
