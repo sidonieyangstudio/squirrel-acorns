@@ -1519,11 +1519,12 @@
     const doneFlags = tasks.map(task => afterSchool.isAfterSchoolDone(log, task.id));
     const nextIndex = doneFlags.indexOf(false);
     const size = 19;
+    const check = `<span class="ticket-step-check" aria-hidden="true"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FEFBF9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>`;
     const arrow = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>`;
     box.innerHTML = tasks.map((task, i) => {
       const done = doneFlags[i];
       const cls = done ? ' done' : (i === nextIndex ? ' next' : '');
-      const step = `<span class="ticket-step${cls}" title="${escAttr(task.title)}" aria-label="${escAttr(task.title)}${done ? '，已完成' : ''}">${iconSvg(task.icon, size, '#a8725f')}</span>`;
+      const step = `<span class="ticket-step${cls}" title="${escAttr(task.title)}" aria-label="${escAttr(task.title)}${done ? '，已完成' : ''}">${iconSvg(task.icon, size, '#a8725f')}${done ? check : ''}</span>`;
       const link = i < tasks.length - 1 ? `<span class="ticket-step-arrow${done ? ' passed' : ''}" aria-hidden="true">${arrow}</span>` : '';
       // 圈圈＋箭頭包成一格，CSS 一排放 4 格，換行時箭頭跟著前一個圈圈
       return `<span class="ticket-step-unit">${step}${link}</span>`;
