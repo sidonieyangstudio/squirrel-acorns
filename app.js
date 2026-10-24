@@ -775,8 +775,18 @@
   /* ---------- points helpers ---------- */
   const afterSchool = window.SquirrelAfterSchool;
   const afterSchoolAlarm = window.SquirrelAfterSchoolAlarm;
-  // App 版不受瀏覽器「要先點一下才能出聲」的限制，鬧鐘聲預設開啟；網頁版維持要按按鈕開啟
-  let afterSchoolAlarmReady = isNativeApp;
+  // App 版不受瀏覽器「要先點一下才能出聲」的限制，鬧鐘聲預設開啟，家長關掉後會記住；
+  // 網頁版維持每次要按按鈕開啟
+  const ALARM_SOUND_KEY = 'squirrel-alarm-sound-v1';
+  let afterSchoolAlarmReady = false;
+  if (isNativeApp) {
+    afterSchoolAlarmReady = true;
+    try { afterSchoolAlarmReady = localStorage.getItem(ALARM_SOUND_KEY) !== 'off'; } catch (e) {}
+  }
+  function rememberAlarmSound(on) {
+    if (!isNativeApp) return;
+    try { localStorage.setItem(ALARM_SOUND_KEY, on ? 'on' : 'off'); } catch (e) {}
+  }
   let lastAlarmRingAt = 0;
   let activeAfterSchoolAlarmPhaseId = null;
 
@@ -975,6 +985,7 @@
       : !afterSchoolAlarmReady;
     if (!nextReady) {
       afterSchoolAlarmReady = false;
+      rememberAlarmSound(false);
       updateAfterSchoolAlarmButton();
       toast('鬧鐘聲已關閉');
       return;
@@ -982,6 +993,7 @@
     try {
       ensureAudio();
       afterSchoolAlarmReady = true;
+      rememberAlarmSound(true);
       updateAfterSchoolAlarmButton();
       afterSchoolAlarmSfx();
       toast('鬧鐘聲已開啟');
