@@ -437,10 +437,16 @@
   /* ---------- audio: jsfxr-style 8-bit 合成 (Web Audio API) ---------- */
   let audioCtx = null;
   function ensureAudio() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!audioCtx || audioCtx.state === 'closed') audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // iPhone 鎖螢幕、跳通知或切到別的 App 後，聲音會變成 interrupted（不只是 suspended），
+    // 要再 resume 一次，不然之後的音效（撒花、打勾）都不會響
+    if (audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
     return audioCtx;
   }
+  // 回到 App 時先把聲音叫醒，第一個音效就不會被吃掉
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
+  });
   // jsfxr 簡化版合成器：照 sfxr 公式跑出 PCM buffer 再播
   function jsfxrPlay(p, pitchShift = 1, volume = 1) {
     try {
