@@ -5,7 +5,7 @@ import { join } from 'node:path';
 const OUT = 'www';
 const problems = [];
 
-const required = ['index.html', 'app.js', 'styles.css', 'app-fonts.css', 'fonts/ChironGoRoundTC.woff2', 'fonts/OFL.txt'];
+const required = ['index.html', 'app.js', 'styles.css', 'app-fonts.css', 'fonts/ChironGoRoundTC.woff2', 'fonts/OFL.txt', 'reminder.wav'];
 for (const f of required) if (!existsSync(join(OUT, f))) problems.push(`缺少必要檔案：${f}`);
 
 const banned = [

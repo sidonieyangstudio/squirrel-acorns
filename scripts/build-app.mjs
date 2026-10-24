@@ -16,6 +16,8 @@ for (const f of rootFiles) cpSync(f, `${OUT}/${f}`);
 for (const dir of ['assets', 'icons']) cpSync(dir, `${OUT}/${dir}`, { recursive: true });
 cpSync('app-shell/fonts', `${OUT}/fonts`, { recursive: true });
 cpSync('app-shell/app-fonts.css', `${OUT}/app-fonts.css`);
+// 手機通知的鈴聲（App 版才用得到；跟 App 內鬧鐘同一段旋律）
+cpSync('app-shell/reminder.wav', `${OUT}/reminder.wav`);
 
 let html = readFileSync('index.html', 'utf8');
 const before = html;

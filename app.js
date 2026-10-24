@@ -1111,6 +1111,8 @@
         return {
           id: item.id,
           ...nativeReminderText(entry.child, phase, showName),
+          // 沒指定聲音的話 iOS 只跳橫幅不會響；用 App 內鬧鐘同一段旋律
+          sound: 'reminder.wav',
           schedule: { at: new Date(item.at), allowWhileIdle: true }
         };
       })
