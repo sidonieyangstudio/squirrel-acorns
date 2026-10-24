@@ -703,7 +703,8 @@ body.parent-mode .after-school-time { right: 98px; }
   transition: background .25s var(--ease), border-color .25s var(--ease);
 }
 .ticket-step.next { border-color: var(--orange); box-shadow: var(--ring-warm); }
-.ticket-step.done { background: var(--cheek); border-color: var(--cheek); }
+/* 完成：和放學已完成任務卡片同一個品牌粉（--light-pink） */
+.ticket-step.done { background: var(--light-pink); border-color: var(--light-pink); }
 .ticket-step-arrow {
   color: var(--light-pink);
   display: grid; place-items: center;

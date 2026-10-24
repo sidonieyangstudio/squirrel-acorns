@@ -1524,7 +1524,7 @@
     box.innerHTML = tasks.map((task, i) => {
       const done = doneFlags[i];
       const cls = done ? ' done' : (i === nextIndex ? ' next' : '');
-      const step = `<span class="ticket-step${cls}" title="${escAttr(task.title)}" aria-label="${escAttr(task.title)}${done ? '，已完成' : ''}">${iconSvg(task.icon, size, done ? '#FEFBF9' : '#a8725f')}</span>`;
+      const step = `<span class="ticket-step${cls}" title="${escAttr(task.title)}" aria-label="${escAttr(task.title)}${done ? '，已完成' : ''}">${iconSvg(task.icon, size, '#a8725f')}</span>`;
       const link = i < tasks.length - 1 ? `<span class="ticket-step-arrow${done ? ' passed' : ''}" aria-hidden="true">${arrow}</span>` : '';
       return step + link;
     }).join('');
