@@ -1394,12 +1394,13 @@
   function renderBirthdayGreeting() {
     const sub = document.getElementById('greet-sub');
     if (!sub || !reflectionRules) return;
-    if (!sub.dataset.defaultText) sub.dataset.defaultText = sub.textContent;
+    // 預設問候語是兩行（中間有 <br>），所以存 HTML 而不是純文字
+    if (!sub.dataset.defaultHtml) sub.dataset.defaultHtml = sub.innerHTML;
     const birthday = reflectionRules.isBirthdayToday(todayKey(), state.birthday);
     if (birthday) {
       sub.innerHTML = `${escHtml(childName())}，生日快樂！<br>松鼠送你生日限定貼紙`;
     } else {
-      sub.textContent = sub.dataset.defaultText;
+      sub.innerHTML = sub.dataset.defaultHtml;
     }
     sub.classList.toggle('birthday', birthday);
   }
@@ -1465,7 +1466,6 @@
 
     // header
     document.getElementById('user-name').textContent = childName();
-    document.getElementById('streak-days').textContent = state.streak;
     const d = new Date();
     const week = ['日','一','二','三','四','五','六'][d.getDay()];
     document.getElementById('today-date').textContent =
@@ -3858,6 +3858,7 @@
   document.getElementById('after-school-alarm-dismiss').onclick = dismissAfterSchoolAlarm;
   document.getElementById('after-school-alarm-snooze').onclick = snoozeAfterSchoolAlarm;
   document.getElementById('btn-open-bingo').onclick = openBingoFromSquirrel;
+  document.getElementById('btn-bubble-bingo').onclick = openBingoFromSquirrel;
   document.getElementById('btn-bingo-spin').onclick = finishBingoRound;
   document.getElementById('btn-bingo-back').onclick = () => goToScreen('today');
   document.addEventListener('click', (e) => {

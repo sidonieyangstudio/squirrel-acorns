@@ -68,6 +68,8 @@ body {
   min-height: 100vh;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
+/* 畫面只能上下捲，不能左右拉（就算之後有裝飾超出一點點也不會露出右邊空白） */
+html { overflow-x: hidden; }
 
 button { font-family: inherit; cursor: pointer; }
 input, textarea { font-family: inherit; }
@@ -156,16 +158,20 @@ body.on-unlock #dock { display: none; }
 }
 
 /* ---------- screen 1: today ---------- */
+/* 2026-10-24 首頁上方縮短：拿掉「連續 N 天」，右上角改放「玩每日加碼」泡泡；
+   松鼠維持原本置中的位置，只往上移，問候語改成兩行放在「嗨 名字！」下方 */
 .today-header {
   background: var(--light-pink);
   border-bottom-left-radius: 32px;
   border-bottom-right-radius: 32px;
-  padding: calc(env(safe-area-inset-top) + 8px) 20px 10px;
+  /* body 已經留了瀏海的安全距離，這裡不再重複加，否則 iPhone 上方會多一大段空白 */
+  padding: 8px 20px 10px;
   position: relative;
   overflow: visible;
 }
+/* 光暈原本 right:-10px 會超出螢幕，讓首頁可以左右拉動；改成留在畫面內 */
 .today-header::after {
-  content: ""; position: absolute; right: -10px; top: 60px;
+  content: ""; position: absolute; right: 0; top: 60px;
   width: 90px; height: 90px;
   background: radial-gradient(circle, rgba(218,132,79,0.16) 0%, transparent 60%);
   border-radius: 50%;
@@ -181,25 +187,24 @@ body.parent-mode .greet-row { padding-right: 0; }
   font-size: 28px; font-weight: 600; line-height: 1.2; margin-top: 8px;
   letter-spacing: 0.01em;
 }
-.greet-sub { font-size: 14px; color: var(--ink-soft); margin-top: 4px; font-weight: 500; }
+.greet-sub { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin-top: 6px; font-weight: 500; }
+/* 右上角一排：家長模式才出現的「孩子檔案」在左、「玩每日加碼」泡泡在右。
+   整排浮在右上角，不佔左邊名字那一欄的寬度，名字才不會被擠成兩行 */
 .header-tools {
+  position: absolute;
+  top: 6px;
+  right: 56px;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 4px;
+  z-index: 2;
 }
-.streak-pill {
-  background: var(--white); padding: 8px 14px;
-  border: 1px solid var(--hairline); box-shadow: var(--shadow-sm);
-  border-radius: var(--pill);
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 13px; font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+.header-tools .child-profile-btn { margin-top: 8px; }
+/* 家長模式多了「孩子檔案」，整排放在日期上方，標題區只在家長模式往下多留一點空間 */
+body.parent-mode .today-header { padding-top: 60px; }
+body.parent-mode .header-tools { top: 2px; }
 .squirrel-wrap {
-  display: flex; justify-content: center; margin-top: -20px; margin-bottom: -8px;
+  display: flex; justify-content: center; margin-top: -46px; margin-bottom: -4px;
   position: relative;
   width: 100%;
   padding: 0;
@@ -208,15 +213,14 @@ body.parent-mode .greet-row { padding-right: 0; }
   box-shadow: none;
 }
 .squirrel-wrap img {
-  width: 156px; height: 156px; object-fit: contain; margin-top: 30px; margin-right: 36px;
+  width: 153px; height: 153px; object-fit: contain;
   animation: breathe 3.2s ease-in-out infinite;
   filter: drop-shadow(0 12px 28px rgba(94,84,83,0.18));
 }
 .squirrel-wrap:active img { transform: translateY(2px) scale(.98); }
 .squirrel-bubble {
-  position: absolute;
-  left: calc(50% + 40px);
-  top: -8px;
+  position: relative;
+  flex-shrink: 0;
   width: 122px;
   height: 52px;
   color: var(--orange);
@@ -1591,10 +1595,6 @@ body.child-mode [data-delete-reward] { display: none !important; }
     padding: 0 12px;
     font-size: 12px;
   }
-  .streak-pill {
-    padding: 8px 12px;
-    font-size: 13px;
-  }
 }
 .child-profile-list { display: grid; gap: 10px; }
 .child-profile-row {
@@ -1657,7 +1657,25 @@ body.child-mode [data-delete-reward] { display: none !important; }
   padding: 22px 20px calc(env(safe-area-inset-bottom) + 22px);
   box-shadow: 0 -16px 40px rgba(94,84,83,0.16);
   animation: slide-up .3s var(--ease);
-  max-height: 92dvh; overflow-y: auto;
+  /* 最多佔螢幕約 2/3，上方留 1/3 背景，點背景就關掉（app.js modal-backdrop click） */
+  max-height: 67vh; max-height: 67dvh; overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* 視窗變矮後內容要捲動，取消／儲存按鈕固定在視窗底部，不用捲到最下面才按得到 */
+.modal .modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-left: -20px; margin-right: -20px;
+  padding: 14px 20px 6px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0) 0, var(--white) 14px);
+}
+/* 按鈕下方補一條白底，蓋住視窗底部留白處露出的內容 */
+.modal .modal-actions::after {
+  content: "";
+  position: absolute; left: 0; right: 0; top: 100%;
+  height: calc(env(safe-area-inset-bottom) + 30px);
+  background: var(--white);
 }
 .modal-handle {
   width: 48px; height: 5px; border-radius: 99px;
@@ -2158,6 +2176,7 @@ body.child-mode [data-delete-reward] { display: none !important; }
 
 /* 我的小本本 · 資料備份 */
 .mine-backup { margin-top: 28px; }
+.mine-restore-hint { margin: 12px 0 0; }
 
 /* 首次打開 · 歡迎畫面 */
 .welcome { position: fixed; inset: 0; z-index: 900; background: var(--cream, #FFF3EE); display: grid; place-items: center; padding: 24px 16px; overflow-y: auto; }
