@@ -19,7 +19,7 @@
         {
           id: 'snack-clothes',
           title: '吃點心、換衣服',
-          note: '先讓身體回到家',
+          note: '先讓身體恢復能量',
           icon: 'ic-salad',
           points: 1
         }

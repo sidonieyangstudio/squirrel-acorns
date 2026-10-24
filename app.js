@@ -37,7 +37,7 @@
       time: '3:00–3:30',
       reminderTime: '',
       tasks: [
-        { id: 'snack-clothes', title: '吃點心、換衣服', note: '先讓身體回到家', icon: 'ic-salad', points: 1 }
+        { id: 'snack-clothes', title: '吃點心、換衣服', note: '先讓身體恢復能量', icon: 'ic-salad', points: 1 }
       ]
     },
     {
@@ -64,14 +64,16 @@
   ];
   const DEFAULT_AFTER_SCHOOL_SETTINGS = {
     pageTitle: '桌遊門票＋睡前故事',
-    pageSubtitle: '先拿桌遊門票，再把晚上整理好',
+    pageSubtitle: '先拿桌遊門票，再把晚上任務整理好',
     finalRewardName: '得到睡前故事',
     finalRewardCardTitle: '睡前故事',
     finalRewardCardSub: ''
   };
   const OLD_AFTER_SCHOOL_DEFAULTS = {
     pageTitle: '桌遊門票',
-    pageSubtitle: '先拿桌遊門票，再把晚上收好',
+    // 2026-10-24 改字：舊預設文字還沒被家長改過的，自動換成新文字
+    pageSubtitles: ['先拿桌遊門票，再把晚上收好', '先拿桌遊門票，再把晚上整理好'],
+    taskNotes: { '先讓身體回到家': '先讓身體恢復能量' },
     phaseTitles: {
       decompress: '回家卸載',
       evening: '晚上收好'
@@ -796,7 +798,7 @@
     if (state.afterSchoolSettings.pageTitle === OLD_AFTER_SCHOOL_DEFAULTS.pageTitle) {
       state.afterSchoolSettings.pageTitle = DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle;
     }
-    if (state.afterSchoolSettings.pageSubtitle === OLD_AFTER_SCHOOL_DEFAULTS.pageSubtitle) {
+    if (OLD_AFTER_SCHOOL_DEFAULTS.pageSubtitles.includes(state.afterSchoolSettings.pageSubtitle)) {
       state.afterSchoolSettings.pageSubtitle = DEFAULT_AFTER_SCHOOL_SETTINGS.pageSubtitle;
     }
     state.afterSchoolSettings.pageTitle = String(state.afterSchoolSettings.pageTitle || DEFAULT_AFTER_SCHOOL_SETTINGS.pageTitle).trim();
@@ -813,6 +815,10 @@
       state.afterSchoolSettings.finalRewardCardSub || ''
     ).trim();
     return state.afterSchoolSettings;
+  }
+
+  function upgradeTaskNote(note) {
+    return OLD_AFTER_SCHOOL_DEFAULTS.taskNotes[note] || note;
   }
 
   function stripPhasePrefix(title) {
@@ -837,7 +843,7 @@
       let tasks = rawTasks.map(task => ({
         id: task.id || h(),
         title: renameToBoardGame(String(task.title || '未命名任務').trim()),
-        note: renameToBoardGame(String(task.note || '').trim()),
+        note: upgradeTaskNote(renameToBoardGame(String(task.note || '').trim())),
         icon: ICON_LIST.includes(task.icon) ? task.icon : defPhase.tasks[0]?.icon || 'ic-star',
         points: Math.max(1, parseInt(task.points, 10) || 1)
       }));
