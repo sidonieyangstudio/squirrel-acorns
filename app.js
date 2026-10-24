@@ -2688,6 +2688,11 @@
       e.stopPropagation();
     }
 
+    // 列表平常可以捲動（touch-action: pan-y）；拖曳排序中擋掉捲動，系統才不會中途把拖曳取消
+    box.addEventListener('touchmove', (e) => {
+      if (dragRow) e.preventDefault();
+    }, { passive: false });
+
     rows().forEach(row => {
       row.addEventListener('pointerdown', onPointerDown);
       row.addEventListener('click', (e) => {

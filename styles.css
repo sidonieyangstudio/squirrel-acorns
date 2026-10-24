@@ -2016,7 +2016,8 @@ body.child-mode [data-delete-reward] { display: none !important; }
   box-shadow: var(--shadow-sm);
   border-radius: 18px; padding: 12px 14px; margin-bottom: 10px;
   transition: all .2s var(--ease);
-  touch-action: none;
+  /* 列表一直可以上下滑；長按拖曳中由 app.js（bindDragSortList 的 touchmove）擋掉捲動 */
+  touch-action: pan-y;
   -webkit-touch-callout: none;
   -webkit-user-drag: none;
 }
@@ -2032,9 +2033,6 @@ body.child-mode [data-delete-reward] { display: none !important; }
   box-shadow: var(--shadow-warm);
   transform: scale(1.02);
   z-index: 2;
-}
-#manage-list.sorting .manage-row {
-  touch-action: none;
 }
 .drag-sorting,
 .drag-sorting * {
