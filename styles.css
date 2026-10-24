@@ -744,8 +744,19 @@ body.parent-mode .after-school-time { right: 98px; }
   white-space: nowrap;
 }
 .ticket-gate.open {
-  background: var(--honey);
-  color: var(--white);
+  background: transparent;
+  color: var(--orange);
+  padding: 0;
+  display: grid;
+  justify-items: center;
+  align-self: center;
+  align-content: center;
+  gap: 2px;
+  font-weight: 700;
+}
+.ticket-gate-squirrel {
+  width: 76px; height: 76px; object-fit: contain;
+  animation: cheer-hop 1s cubic-bezier(.3,1.3,.5,1) 2;
 }
 .after-school-section {
   flex: 1;

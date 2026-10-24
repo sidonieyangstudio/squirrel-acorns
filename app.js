@@ -1569,7 +1569,10 @@
       const text = `${stripPhasePrefix(phase.title)} ${formatClockShort(phase.reminderTime)} ${done ? '已完成' : (due ? '提醒時間到了' : '提醒')}`;
       return `<span class="ticket-reminder-pill${due ? ' alert' : ''}">${escHtml(text)}</span>`;
     }).join('');
-    ticketGate.textContent = status.gameTicket.done ? '獲得門票' : '準備中';
+    // 門票任務全部完成：換成歡呼的松鼠＋「拿到門票」；進行中維持「準備中」
+    ticketGate.innerHTML = status.gameTicket.done
+      ? '<img class="ticket-gate-squirrel" src="assets/squirrel-cheer.webp" alt="" /><span>拿到門票</span>'
+      : '準備中';
     ticketGate.classList.toggle('open', status.gameTicket.done);
 
     list.innerHTML = plan.map(phase => {
