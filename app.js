@@ -2426,7 +2426,7 @@
     const customMinutes = durationValue === 'custom' ? Math.max(1, parseInt(habit.timerMinutes, 10) || 30) : 30;
     openModal(`
       <h3 class="modal-title">${isNew ? '新增習慣' : '編輯習慣'}</h3>
-      <p class="modal-sub">每天勾選完成就能拿到橡實 🌰</p>
+      <p class="modal-sub">每天勾選完成就能拿到橡實</p>
       <form id="habit-form">
         <div class="field">
           <label>習慣名稱</label>
