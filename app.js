@@ -447,6 +447,25 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && audioCtx && audioCtx.state !== 'running') audioCtx.resume().catch(() => {});
   });
+  // iPhone：打開 App 後的第一個音效常在聲音系統還沒醒時就播放而被吃掉（例如一打開就兌換，「噹」不見）。
+  // 手指一碰畫面就先叫醒，並播一段無聲的音，讓聲音系統真正開始運作
+  function unlockAudio() {
+    try {
+      const ctx = ensureAudio();
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch (e) {}
+  }
+  document.addEventListener('touchstart', unlockAudio, { passive: true, capture: true });
+  document.addEventListener('pointerdown', unlockAudio, { passive: true, capture: true });
+  // 聲音系統還沒醒時，等它醒了再播，不要直接播掉
+  function whenAudioReady(ctx, play) {
+    if (ctx.state === 'running') { play(); return; }
+    ctx.resume().then(play).catch(play);
+  }
   // jsfxr 簡化版合成器：照 sfxr 公式跑出 PCM buffer 再播
   function jsfxrPlay(p, pitchShift = 1, volume = 1) {
     try {
@@ -496,7 +515,7 @@
       const src = ctx.createBufferSource();
       src.buffer = buf;
       src.connect(ctx.destination);
-      src.start();
+      whenAudioReady(ctx, () => src.start());
     } catch (e) { /* silent */ }
   }
   // pickupCoin1.json 配方（完成習慣的「叮」）
