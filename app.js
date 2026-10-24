@@ -1518,15 +1518,15 @@
     const tasks = (phase && phase.tasks) || [];
     const doneFlags = tasks.map(task => afterSchool.isAfterSchoolDone(log, task.id));
     const nextIndex = doneFlags.indexOf(false);
-    const size = tasks.length > 3 ? 18 : 22;
-    const arrow = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>`;
-    box.classList.toggle('many', tasks.length > 3);
+    const size = 19;
+    const arrow = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>`;
     box.innerHTML = tasks.map((task, i) => {
       const done = doneFlags[i];
       const cls = done ? ' done' : (i === nextIndex ? ' next' : '');
       const step = `<span class="ticket-step${cls}" title="${escAttr(task.title)}" aria-label="${escAttr(task.title)}${done ? '，已完成' : ''}">${iconSvg(task.icon, size, '#a8725f')}</span>`;
       const link = i < tasks.length - 1 ? `<span class="ticket-step-arrow${done ? ' passed' : ''}" aria-hidden="true">${arrow}</span>` : '';
-      return step + link;
+      // 圈圈＋箭頭包成一格，CSS 一排放 4 格，換行時箭頭跟著前一個圈圈
+      return `<span class="ticket-step-unit">${step}${link}</span>`;
     }).join('');
     box.hidden = tasks.length === 0;
   }
@@ -1557,9 +1557,7 @@
     document.getElementById('after-school-sub').textContent = cfg.pageSubtitle;
     updateAfterSchoolAlarmButton();
     ticketTitle.textContent = ticketName;
-    ticketSub.textContent = status.gameTicket.done
-      ? `${ticketName}條件都完成了`
-      : `已完成 ${status.gameTicket.doneCount}/${status.gameTicket.totalCount}`;
+    ticketSub.textContent = `已完成 ${status.gameTicket.doneCount}/${status.gameTicket.totalCount}`;
     renderTicketSteps(plan, log);
     // 門票任務全部完成：換成歡呼的松鼠＋「拿到門票」；進行中維持「準備中」
     ticketGate.innerHTML = status.gameTicket.done

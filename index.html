@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=122">
+<link rel="stylesheet" href="styles.css?v=124">
 <title>松鼠點數收集 · 歐的樂星球</title>
 </head>
 <body class="child-mode">
@@ -93,8 +93,10 @@
 
       <div class="after-school-ticket" id="after-school-ticket">
         <div>
-          <div class="ticket-title" id="after-school-ticket-title">桌遊門票</div>
-          <div class="ticket-sub" id="after-school-ticket-sub">中文故事、練琴還沒完成</div>
+          <div class="ticket-head">
+            <div class="ticket-title" id="after-school-ticket-title">桌遊門票</div>
+            <div class="ticket-sub" id="after-school-ticket-sub">已完成 0/2</div>
+          </div>
           <div class="ticket-steps" id="after-school-ticket-steps"></div>
         </div>
         <div class="ticket-gate" id="after-school-ticket-gate">7:00 關門</div>
@@ -361,7 +363,7 @@
 <script src="reflection-rules.js?v=7"></script>
 <script src="backup-rules.js?v=1"></script>
 <script src="squirrel-mood.js?v=1"></script>
-<script src="app.js?v=114"></script>
+<script src="app.js?v=115"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

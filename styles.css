@@ -676,23 +676,34 @@ body.parent-mode .after-school-time { right: 98px; }
   font-weight: 600;
   line-height: 1.25;
 }
+/* 「已完成 N/M」排在「桌遊門票」標題右邊 */
+.ticket-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+}
 .ticket-sub {
-  margin-top: 4px;
   color: var(--ink-soft);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
+  white-space: nowrap;
 }
-/* 桌遊門票進度：每個門票任務一個圈圈（裡面是任務圖示），中間用箭頭接起來 */
+/* 桌遊門票進度：每個門票任務一個圈圈（裡面是任務圖示），後面接箭頭；一排最多 4 個，超過換行 */
 .ticket-steps {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 4px;
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  gap: 8px 0;
   margin-top: 10px;
-  --step-size: 40px;
+  --step-size: 34px;
 }
-.ticket-steps.many { --step-size: 32px; }
+.ticket-step-unit {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-right: 3px;
+}
 .ticket-step {
   width: var(--step-size); height: var(--step-size);
   border-radius: 50%;
@@ -711,6 +722,8 @@ body.parent-mode .after-school-time { right: 98px; }
   flex-shrink: 0;
 }
 .ticket-step-arrow.passed { color: var(--orange); }
+/* 每排第 4 個後面不放箭頭，避免箭頭指向空白；換行本身就表示接到下一排 */
+.ticket-step-unit:nth-child(4n) .ticket-step-arrow { display: none; }
 .ticket-gate {
   border-radius: 16px;
   padding: 10px 12px;
@@ -733,7 +746,7 @@ body.parent-mode .after-school-time { right: 98px; }
   font-weight: 700;
 }
 .ticket-gate-squirrel {
-  width: 76px; height: 76px; object-fit: contain;
+  width: 100px; height: 100px; object-fit: contain;
   animation: cheer-hop 1s cubic-bezier(.3,1.3,.5,1) 2;
 }
 .after-school-section {
