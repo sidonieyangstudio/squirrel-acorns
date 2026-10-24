@@ -2137,12 +2137,13 @@ body.child-mode [data-delete-reward] { display: none !important; }
   display: grid;
   gap: 8px;
 }
-/* 往左滑露出刪除：紅色按鈕藏在任務列後面 */
+/* 往左滑露出刪除：紅色按鈕藏在列後面，開始滑才顯示（已完成的列半透明，避免透出紅色） */
 .swipe-row {
   position: relative;
   border-radius: 14px;
-  overflow: hidden;
 }
+/* 平常不裁切，卡片陰影才完整；開始滑時才裁切，列不會滑出框外 */
+.swipe-row.swiping { overflow: hidden; }
 .swipe-delete {
   position: absolute; top: 0; right: 0; bottom: 0;
   width: 84px;
@@ -2150,13 +2151,24 @@ body.child-mode [data-delete-reward] { display: none !important; }
   background: var(--pink);
   color: var(--white);
   font-size: 14px; font-weight: 700;
+  visibility: hidden;
 }
-.swipe-row .after-school-editor-task {
+.swipe-row.swiping .swipe-delete { visibility: visible; }
+.swipe-row > .after-school-editor-task,
+.swipe-row > .habit,
+.swipe-row > .reward {
   position: relative;
   z-index: 1;
   touch-action: pan-y;
-  transition: transform .2s var(--ease);
+  transition: transform .2s var(--ease), background .25s var(--ease), opacity .25s var(--ease);
 }
+/* 首頁任務、獎勵卡：間距和圓角改由外層負責 */
+.swipe-row:has(> .habit) { border-radius: 20px; margin-bottom: 10px; }
+.swipe-row > .habit { margin-bottom: 0; }
+.swipe-row:has(> .reward) { border-radius: 22px; margin-bottom: 14px; }
+.swipe-row > .reward { margin-bottom: 0; }
+.swipe-row:has(> .habit) .swipe-delete { border-radius: 0 20px 20px 0; }
+.swipe-row:has(> .reward) .swipe-delete { border-radius: 0 22px 22px 0; }
 .after-school-editor-task {
   width: 100%;
   display: flex;

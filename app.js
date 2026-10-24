@@ -1493,7 +1493,13 @@
           </div>
         `;
         row.querySelector('.habit-title').textContent = habit.title;
-        list.appendChild(row);
+        // 家長模式往左滑可刪除（孩子模式不能滑）
+        const wrap = document.createElement('div');
+        wrap.className = 'swipe-row';
+        wrap.innerHTML = swipeRowHtml(habit.title);
+        wrap.appendChild(row);
+        bindSwipeRow(wrap, row, () => deleteHabit(habit), { onlyParent: true });
+        list.appendChild(wrap);
       });
     }
 
@@ -1979,7 +1985,12 @@
       const subEl = card.querySelector('.reward-sub');
       if (rw.desc) subEl.textContent = rw.desc;
       else subEl.remove();
-      list.appendChild(card);
+      const wrap = document.createElement('div');
+      wrap.className = 'swipe-row';
+      wrap.innerHTML = swipeRowHtml(rw.title);
+      wrap.appendChild(card);
+      bindSwipeRow(wrap, card, () => deleteReward(rw), { onlyParent: true });
+      list.appendChild(wrap);
     });
   }
 
@@ -2320,7 +2331,7 @@
               <div class="after-school-editor-task-list">
                 ${phase.tasks.map(task => `
                   <div class="swipe-row">
-                  <button type="button" class="swipe-delete" data-swipe-delete aria-label="刪除${escAttr(task.title)}">刪除</button>
+                  ${swipeRowHtml(task.title)}
                   <button type="button" class="after-school-editor-task" data-edit-after-school-task="${task.id}">
                     <span class="after-school-editor-task-icon">${iconSvg(task.icon, 20, '#5E5453')}</span>
                     <span class="after-school-editor-task-text">
@@ -2396,61 +2407,94 @@
     openAfterSchoolSettingsForm();
   }
 
-  // 放學設定的任務列：往左滑露出「刪除」，點刪除會再確認一次；滑開時點一下列本身只會收回
-  function bindSwipeToDelete(root) {
+  // 往左滑露出「刪除」（放學設定任務列、首頁任務、獎勵卡共用）。
+  // 點刪除會再確認；滑開時點列本身只會收回。onlyParent：只有家長模式能滑
+  let openSwipeRow = null;
+  function closeSwipeRow(row) {
+    if (!row) return;
+    row.style.transform = '';
+    row.classList.remove('swiped');
+    row.closest('.swipe-row')?.classList.remove('swiping');
+    if (openSwipeRow === row) openSwipeRow = null;
+  }
+  function bindSwipeRow(wrap, row, onDelete, { onlyParent = false } = {}) {
     const OPEN_X = -84;
-    let openRow = null;
-    const close = (row) => { if (row) { row.style.transform = ''; row.classList.remove('swiped'); } if (openRow === row) openRow = null; };
+    let startX = 0, startY = 0, dx = 0, tracking = false, horizontal = null;
+    row.addEventListener('touchstart', (e) => {
+      if (onlyParent && !document.body.classList.contains('parent-mode')) return;
+      if (openSwipeRow && openSwipeRow !== row) closeSwipeRow(openSwipeRow);
+      const t = e.touches[0];
+      startX = t.clientX; startY = t.clientY; dx = 0; tracking = true; horizontal = null;
+      row.style.transition = 'none';
+    }, { passive: true });
+    row.addEventListener('touchmove', (e) => {
+      if (!tracking) return;
+      const t = e.touches[0];
+      const mx = t.clientX - startX, my = t.clientY - startY;
+      if (horizontal === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) horizontal = Math.abs(mx) > Math.abs(my);
+      if (!horizontal) return;
+      e.preventDefault();
+      wrap.classList.add('swiping');
+      const base = row.classList.contains('swiped') ? OPEN_X : 0;
+      dx = Math.max(OPEN_X - 20, Math.min(0, base + mx));
+      row.style.transform = `translateX(${dx}px)`;
+    }, { passive: false });
+    row.addEventListener('touchend', () => {
+      if (!tracking) return;
+      tracking = false;
+      row.style.transition = '';
+      if (!horizontal) return;
+      if (dx < OPEN_X / 2) {
+        row.style.transform = `translateX(${OPEN_X}px)`;
+        row.classList.add('swiped');
+        openSwipeRow = row;
+      } else {
+        closeSwipeRow(row);
+      }
+      // 手指剛放開時系統可能補送一次點擊，短時間內忽略
+      row.dataset.justSwiped = '1';
+      setTimeout(() => { delete row.dataset.justSwiped; }, 350);
+    });
+    // 掛在外層的捕獲階段，才會比列裡面的按鈕（打勾、編輯、兌換）先執行
+    wrap.addEventListener('click', (e) => {
+      if (!row.contains(e.target)) return;
+      if (row.dataset.justSwiped || row.classList.contains('swiped')) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        if (!row.dataset.justSwiped) closeSwipeRow(row);
+      }
+    }, true);
+    wrap.querySelector('[data-swipe-delete]').onclick = () => {
+      closeSwipeRow(row);
+      onDelete();
+    };
+  }
+  function swipeRowHtml(label) {
+    return `<button type="button" class="swipe-delete" data-swipe-delete aria-label="刪除${escAttr(label)}">刪除</button>`;
+  }
+
+  function bindSwipeToDelete(root) {
     root.querySelectorAll('.swipe-row').forEach(wrap => {
       const row = wrap.querySelector('.after-school-editor-task');
-      let startX = 0, startY = 0, dx = 0, tracking = false, horizontal = null;
-      row.addEventListener('touchstart', (e) => {
-        if (openRow && openRow !== row) close(openRow);
-        const t = e.touches[0];
-        startX = t.clientX; startY = t.clientY; dx = 0; tracking = true; horizontal = null;
-        row.style.transition = 'none';
-      }, { passive: true });
-      row.addEventListener('touchmove', (e) => {
-        if (!tracking) return;
-        const t = e.touches[0];
-        const mx = t.clientX - startX, my = t.clientY - startY;
-        if (horizontal === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) horizontal = Math.abs(mx) > Math.abs(my);
-        if (!horizontal) return;
-        e.preventDefault();
-        const base = row.classList.contains('swiped') ? OPEN_X : 0;
-        dx = Math.max(OPEN_X - 20, Math.min(0, base + mx));
-        row.style.transform = `translateX(${dx}px)`;
-      }, { passive: false });
-      row.addEventListener('touchend', () => {
-        if (!tracking) return;
-        tracking = false;
-        row.style.transition = '';
-        if (!horizontal) return;
-        if (dx < OPEN_X / 2) {
-          row.style.transform = `translateX(${OPEN_X}px)`;
-          row.classList.add('swiped');
-          openRow = row;
-        } else {
-          close(row);
-        }
-        // 手指剛放開時系統可能補送一次點擊，短時間內忽略
-        row.dataset.justSwiped = '1';
-        setTimeout(() => { delete row.dataset.justSwiped; }, 350);
-      });
-      // 掛在外層的捕獲階段，才會比任務列自己的「打開編輯」先執行
-      wrap.addEventListener('click', (e) => {
-        if (!e.target.closest('.after-school-editor-task')) return;
-        if (row.dataset.justSwiped || row.classList.contains('swiped')) {
-          e.stopImmediatePropagation();
-          e.preventDefault();
-          if (!row.dataset.justSwiped) close(row);
-        }
-      }, true);
-      wrap.querySelector('[data-swipe-delete]').onclick = () => {
+      bindSwipeRow(wrap, row, () => {
         const task = afterSchoolTaskById(row.dataset.editAfterSchoolTask);
         if (task) deleteAfterSchoolTask(task.phaseId, task);
-      };
+      });
     });
+  }
+
+  function deleteHabit(habit) {
+    if (!confirm(`刪除「${habit.title}」？`)) return;
+    state.habits = state.habits.filter(x => x.id !== habit.id);
+    // also clear from today's log
+    Object.values(state.log).forEach(l => delete l[habit.id]);
+    Object.values(state.timedRuns || {}).forEach(l => delete l[habit.id]);
+    save(); closeModal(); renderToday();
+  }
+  function deleteReward(reward) {
+    if (!confirm(`刪除「${reward.title}」？`)) return;
+    state.rewards = state.rewards.filter(x => x.id !== reward.id);
+    save(); closeModal(); renderRewards();
   }
 
   function openAfterSchoolTaskForm(phaseId, task) {
@@ -2608,14 +2652,7 @@
     syncTimedFields();
     root.querySelector('[data-cancel]').onclick = closeModal;
     const delBtn = root.querySelector('[data-delete-habit]');
-    if (delBtn) delBtn.onclick = () => {
-      if (!confirm(`刪除「${habit.title}」？`)) return;
-      state.habits = state.habits.filter(x => x.id !== habit.id);
-      // also clear from today's log
-      Object.values(state.log).forEach(l => delete l[habit.id]);
-      Object.values(state.timedRuns || {}).forEach(l => delete l[habit.id]);
-      save(); closeModal(); renderToday();
-    };
+    if (delBtn) delBtn.onclick = () => deleteHabit(habit);
     root.querySelector('#habit-form').onsubmit = (e) => {
       e.preventDefault();
       const f = e.target;
@@ -2669,11 +2706,7 @@
     bindIconPicker(root);
     root.querySelector('[data-cancel]').onclick = closeModal;
     const delBtn = root.querySelector('[data-delete-reward]');
-    if (delBtn) delBtn.onclick = () => {
-      if (!confirm(`刪除「${reward.title}」？`)) return;
-      state.rewards = state.rewards.filter(x => x.id !== reward.id);
-      save(); closeModal(); renderRewards();
-    };
+    if (delBtn) delBtn.onclick = () => deleteReward(reward);
     root.querySelector('#reward-form').onsubmit = (e) => {
       e.preventDefault();
       const f = e.target;

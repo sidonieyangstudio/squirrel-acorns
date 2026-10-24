@@ -13,7 +13,7 @@
       "presentationOptions": ["banner", "list"]
     },
     "SplashScreen": {
-      "launchShowDuration": 1100,
+      "launchShowDuration": 900,
       "launchAutoHide": true,
       "backgroundColor": "#FFF3EE",
       "showSpinner": false
