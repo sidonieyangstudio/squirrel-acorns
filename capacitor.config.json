@@ -9,6 +9,9 @@
     "Keyboard": {
       "resize": "native"
     },
+    "LocalNotifications": {
+      "presentationOptions": ["banner", "list"]
+    },
     "SplashScreen": {
       "launchShowDuration": 1100,
       "launchAutoHide": true,

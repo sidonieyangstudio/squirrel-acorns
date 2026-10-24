@@ -775,7 +775,9 @@
   /* ---------- points helpers ---------- */
   const afterSchool = window.SquirrelAfterSchool;
   const afterSchoolAlarm = window.SquirrelAfterSchoolAlarm;
-  let afterSchoolAlarmReady = false;
+  // App 版不受瀏覽器「要先點一下才能出聲」的限制，鬧鐘聲預設開啟；網頁版維持要按按鈕開啟
+  let afterSchoolAlarmReady = isNativeApp;
+  let lastAlarmRingAt = 0;
   let activeAfterSchoolAlarmPhaseId = null;
 
   function normalizeClock(value, fallback = '') {
@@ -950,7 +952,15 @@
       ? '先完成門票任務，再開心使用。'
       : '先整理好，再舒服進入睡前時間。';
     overlay.hidden = false;
-    if (afterSchoolAlarmReady && !alreadyOpen) afterSchoolAlarmSfx();
+    if (afterSchoolAlarmReady && !alreadyOpen) ringAfterSchoolAlarm();
+  }
+
+  // 提醒視窗和手機通知可能幾乎同時到，5 秒內只響一次
+  function ringAfterSchoolAlarm() {
+    const now = Date.now();
+    if (now - lastAlarmRingAt < 5000) return;
+    lastAlarmRingAt = now;
+    afterSchoolAlarmSfx();
   }
 
   function hideAfterSchoolAlarm() {
@@ -3913,6 +3923,13 @@
   dailyReset();
   refreshStreak();
   scheduleNativeReminderSync();
+  // App 開著時收到放學提醒通知：系統橫幅不出聲（capacitor.config presentationOptions），改由 App 自己響鬧鐘聲
+  const reminderNotifications = nativeNotifications();
+  if (reminderNotifications && afterSchoolAlarm) {
+    reminderNotifications.addListener('localNotificationReceived', (notification) => {
+      if (afterSchoolAlarmReady && afterSchoolAlarm.isNativeReminderId(notification.id)) ringAfterSchoolAlarm();
+    });
+  }
   if (window.location.hash === '#after-school') {
     goToScreen('after-school');
   } else {
