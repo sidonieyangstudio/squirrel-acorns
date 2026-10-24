@@ -1386,6 +1386,61 @@ body.parent-mode .after-school-time { right: 98px; }
   position: relative;
 }
 .mine-cal-day.empty { background: transparent; border: none; }
+/* 補登：月曆上補登過的日子右上角小橘點；說明在月曆下方，「點過去的日子可以補登」只在家長模式出現 */
+body.parent-mode .mine-cal-day.past { cursor: pointer; }
+.cal-backfill-dot {
+  position: absolute; right: 3px; top: 3px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 1.5px var(--white);
+}
+.cal-backfill-hint {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 12px;
+  font-size: 12px; color: var(--ink-soft);
+}
+.cal-backfill-hint i { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+.cal-backfill-parent { display: none; }
+body.parent-mode .cal-backfill-parent { display: inline; }
+.bf-list { display: grid; gap: 8px; margin: 4px 0 6px; }
+.bf-row {
+  width: 100%;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline); border-radius: 14px;
+  background: var(--white); color: var(--ink);
+  text-align: left;
+}
+.bf-row.done { background: var(--light-pink); }
+.bf-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--pink-bg);
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.bf-row.done .bf-icon { background: var(--white); }
+.bf-text { flex: 1; min-width: 0; }
+.bf-text b { display: block; font-size: 14px; font-weight: 700; }
+.bf-text small { font-size: 12px; color: var(--ink-muted); }
+.bf-check {
+  width: 30px; height: 30px; border-radius: 10px;
+  border: 1px solid var(--hairline-strong); background: var(--white);
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.bf-check svg { visibility: hidden; }
+.bf-row.done .bf-check { background: var(--orange); border-color: var(--orange); }
+.bf-row.done .bf-check svg { visibility: visible; }
+.bf-tag {
+  display: inline-block; margin-left: 6px; padding: 1px 7px;
+  border-radius: 99px; background: var(--orange); color: var(--white);
+  font-size: 10px; font-weight: 700; vertical-align: 2px;
+}
+.bf-sum {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-radius: 14px;
+  background: var(--pink-bg); color: var(--ink-soft); font-size: 13px;
+  margin-top: 4px;
+}
+.bf-sum b { color: var(--orange); font-size: 18px; }
 .mine-cal-day.today {
   border: 1px solid var(--orange);
   box-shadow: var(--ring-warm);
@@ -2154,6 +2209,20 @@ body.child-mode [data-delete-reward] { display: none !important; }
   visibility: hidden;
 }
 .swipe-row.swiping .swipe-delete { visibility: visible; }
+/* 往右滑露出綠色「複製」，在左邊 */
+.swipe-copy {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  width: 84px;
+  border: 0; border-radius: 14px 0 0 14px;
+  background: var(--moss);
+  color: var(--white);
+  font-size: 14px; font-weight: 700;
+  visibility: hidden;
+}
+.swipe-row.swiping-right { overflow: hidden; }
+.swipe-row.swiping-right .swipe-copy { visibility: visible; }
+.swipe-row:has(> .habit) .swipe-copy { border-radius: 20px 0 0 20px; }
+.swipe-row:has(> .reward) .swipe-copy { border-radius: 22px 0 0 22px; }
 .swipe-row > .after-school-editor-task,
 .swipe-row > .habit,
 .swipe-row > .reward {

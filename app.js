@@ -305,48 +305,14 @@
     return `${m}:${String(s).padStart(2,'0')}`;
   }
 
-  /* ---------- 每日重置：跨日打開時，今天的勾選清空（但 state.points 累積保留） ---------- */
-  function dailyReset() {
-    const today = todayKey();
-    // log 是用日期當 key 的，所以「今天」自動是新的一天空白；不用主動清。
-    // 但保險：如果 lastActiveDate 不是今天且不是昨天，把連續天數 reset 為 0
-    if (state.lastActiveDate && state.lastActiveDate !== today) {
-      const y = new Date(); y.setDate(y.getDate()-1);
-      const ydk = `${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;
-      if (state.lastActiveDate !== ydk) {
-        state.streak = 0;
-      }
-      save();
-    }
-  }
-
   const dayRolloverTracker = window.SquirrelDailyReset
     ? window.SquirrelDailyReset.createDayRolloverTracker(todayKey, () => {
-        dailyReset();
-        refreshStreak();
         refreshCurrentScreen();
       })
     : { check() { return false; } };
 
   function checkDayRollover() {
     dayRolloverTracker.check();
-  }
-
-  /* ---------- streak (簡易：今天有勾任何一個就 +1，跨日斷掉) ---------- */
-  function refreshStreak() {
-    const today = todayKey();
-    const todayLog = state.log[today] || {};
-    const afterSchoolLog = (state.afterSchoolLog || {})[today] || {};
-    const anyAfterSchool = Object.values(afterSchoolLog).some(v => v && v.done);
-    const anyToday = Object.values(todayLog).some(isLogDone) || anyAfterSchool;
-    if (anyToday) {
-      if (state.lastActiveDate === today) return;
-      const y = new Date(); y.setDate(y.getDate()-1);
-      const ydk = `${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;
-      state.streak = (state.lastActiveDate === ydk) ? state.streak + 1 : 1;
-      state.lastActiveDate = today;
-      save();
-    }
   }
 
   /* ---------- icon util ---------- */
@@ -1498,7 +1464,7 @@
         wrap.className = 'swipe-row';
         wrap.innerHTML = swipeRowHtml(habit.title);
         wrap.appendChild(row);
-        bindSwipeRow(wrap, row, () => deleteHabit(habit), { onlyParent: true });
+        bindSwipeRow(wrap, row, () => deleteHabit(habit), { onlyParent: true, onCopy: () => copyHabit(habit) });
         list.appendChild(wrap);
       });
     }
@@ -1680,7 +1646,6 @@
     state.afterSchoolLog[today] = afterSchool.setAfterSchoolTaskDone(log, id, !wasDone);
     state.points = Math.max(0, state.points + (wasDone ? -earned : earned));
     save();
-    refreshStreak();
     const nextStatus = afterSchool.getAfterSchoolStatus(afterSchoolPlan(), state.afterSchoolLog[today]);
     const ticketJustUnlocked = !wasDone && !prevStatus.gameTicket.done && nextStatus.gameTicket.done;
 
@@ -1989,7 +1954,7 @@
       wrap.className = 'swipe-row';
       wrap.innerHTML = swipeRowHtml(rw.title);
       wrap.appendChild(card);
-      bindSwipeRow(wrap, card, () => deleteReward(rw), { onlyParent: true });
+      bindSwipeRow(wrap, card, () => deleteReward(rw), { onlyParent: true, onCopy: () => copyReward(rw) });
       list.appendChild(wrap);
     });
   }
@@ -2197,7 +2162,6 @@
       state.points += earnedPoints;
     }
     state.log[today] = log;
-    refreshStreak();
     save();
 
     if (!wasDone) {
@@ -2407,18 +2371,19 @@
     openAfterSchoolSettingsForm();
   }
 
-  // 往左滑露出「刪除」（放學設定任務列、首頁任務、獎勵卡共用）。
+  // 往左滑露出紅色「刪除」、往右滑露出綠色「複製」（放學設定任務列、首頁任務、獎勵卡共用）。
   // 點刪除會再確認；滑開時點列本身只會收回。onlyParent：只有家長模式能滑
   let openSwipeRow = null;
   function closeSwipeRow(row) {
     if (!row) return;
     row.style.transform = '';
     row.classList.remove('swiped');
-    row.closest('.swipe-row')?.classList.remove('swiping');
+    row.closest('.swipe-row')?.classList.remove('swiping', 'swiping-right');
     if (openSwipeRow === row) openSwipeRow = null;
   }
-  function bindSwipeRow(wrap, row, onDelete, { onlyParent = false } = {}) {
+  function bindSwipeRow(wrap, row, onDelete, { onlyParent = false, onCopy = null } = {}) {
     const OPEN_X = -84;
+    const COPY_X = onCopy ? 84 : 0;
     let startX = 0, startY = 0, dx = 0, tracking = false, horizontal = null;
     row.addEventListener('touchstart', (e) => {
       if (onlyParent && !document.body.classList.contains('parent-mode')) return;
@@ -2434,9 +2399,10 @@
       if (horizontal === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) horizontal = Math.abs(mx) > Math.abs(my);
       if (!horizontal) return;
       e.preventDefault();
-      wrap.classList.add('swiping');
-      const base = row.classList.contains('swiped') ? OPEN_X : 0;
-      dx = Math.max(OPEN_X - 20, Math.min(0, base + mx));
+      const base = row.classList.contains('swiped') ? OPEN_X : (row.classList.contains('swiped-right') ? COPY_X : 0);
+      dx = Math.max(OPEN_X - 20, Math.min(COPY_X ? COPY_X + 20 : 0, base + mx));
+      wrap.classList.toggle('swiping', dx < 0);
+      wrap.classList.toggle('swiping-right', dx > 0);
       row.style.transform = `translateX(${dx}px)`;
     }, { passive: false });
     row.addEventListener('touchend', () => {
@@ -2444,9 +2410,14 @@
       tracking = false;
       row.style.transition = '';
       if (!horizontal) return;
+      row.classList.remove('swiped', 'swiped-right');
       if (dx < OPEN_X / 2) {
         row.style.transform = `translateX(${OPEN_X}px)`;
         row.classList.add('swiped');
+        openSwipeRow = row;
+      } else if (COPY_X && dx > COPY_X / 2) {
+        row.style.transform = `translateX(${COPY_X}px)`;
+        row.classList.add('swiped-right');
         openSwipeRow = row;
       } else {
         closeSwipeRow(row);
@@ -2458,7 +2429,7 @@
     // 掛在外層的捕獲階段，才會比列裡面的按鈕（打勾、編輯、兌換）先執行
     wrap.addEventListener('click', (e) => {
       if (!row.contains(e.target)) return;
-      if (row.dataset.justSwiped || row.classList.contains('swiped')) {
+      if (row.dataset.justSwiped || row.classList.contains('swiped') || row.classList.contains('swiped-right')) {
         e.stopImmediatePropagation();
         e.preventDefault();
         if (!row.dataset.justSwiped) closeSwipeRow(row);
@@ -2468,17 +2439,65 @@
       closeSwipeRow(row);
       onDelete();
     };
+    const copyBtn = wrap.querySelector('[data-swipe-copy]');
+    if (copyBtn && onCopy) copyBtn.onclick = () => {
+      closeSwipeRow(row);
+      onCopy();
+    };
   }
   function swipeRowHtml(label) {
-    return `<button type="button" class="swipe-delete" data-swipe-delete aria-label="刪除${escAttr(label)}">刪除</button>`;
+    return `<button type="button" class="swipe-copy" data-swipe-copy aria-label="複製${escAttr(label)}">複製</button>`
+      + `<button type="button" class="swipe-delete" data-swipe-delete aria-label="刪除${escAttr(label)}">刪除</button>`;
+  }
+  // 複製一份放在原本那一項的下面，名字加「（複製）」，接著打開編輯讓家長改
+  function copyName(title) {
+    return `${String(title || '').replace(/（複製）$/, '')}（複製）`;
+  }
+  function copyHabit(habit) {
+    const copy = { ...structuredClone(habit), id: h(), title: copyName(habit.title) };
+    const i = state.habits.findIndex(x => x.id === habit.id);
+    state.habits.splice(i + 1, 0, copy);
+    save(); renderToday();
+    toast('已複製');
+    openHabitForm(copy);
+  }
+  function copyReward(reward) {
+    const copy = { ...structuredClone(reward), id: h(), title: copyName(reward.title) };
+    const i = state.rewards.findIndex(x => x.id === reward.id);
+    state.rewards.splice(i + 1, 0, copy);
+    save(); renderRewards();
+    toast('已複製');
+    openRewardForm(copy);
+  }
+  function copyAfterSchoolTask(phaseId, task) {
+    const copy = { id: `as-${h()}`, title: copyName(task.title), note: task.note || '', icon: task.icon, points: task.points };
+    state.afterSchoolPlan = afterSchoolPlan().map(item => {
+      if (item.id !== phaseId) return item;
+      const tasks = item.tasks.slice();
+      const i = tasks.findIndex(x => x.id === task.id);
+      tasks.splice(i + 1, 0, copy);
+      return { ...item, tasks };
+    });
+    state.afterSchoolPlan = normalizeAfterSchoolPlan(state.afterSchoolPlan);
+    silencePassedRemindersAfterEdit();
+    save();
+    renderAfterSchool();
+    openAfterSchoolSettingsForm();
+    toast('已複製');
   }
 
   function bindSwipeToDelete(root) {
     root.querySelectorAll('.swipe-row').forEach(wrap => {
       const row = wrap.querySelector('.after-school-editor-task');
+      const task = () => afterSchoolTaskById(row.dataset.editAfterSchoolTask);
       bindSwipeRow(wrap, row, () => {
-        const task = afterSchoolTaskById(row.dataset.editAfterSchoolTask);
-        if (task) deleteAfterSchoolTask(task.phaseId, task);
+        const t = task();
+        if (t) deleteAfterSchoolTask(t.phaseId, t);
+      }, {
+        onCopy: () => {
+          const t = task();
+          if (t) copyAfterSchoolTask(t.phaseId, t);
+        }
       });
     });
   }
@@ -3042,7 +3061,6 @@
       closeModal();
       setParentMode(false);
     }
-    refreshStreak();
     refreshCurrentScreen();
     if (!closeAfterSwitch) openChildProfilesModal();
     toast(`已切換到 ${state.userName}`);
@@ -3297,7 +3315,6 @@
     const weekTotal = totals.reduce((s, x) => s + x.val, 0);
     const weekBest = totals.reduce((m, x) => Math.max(m, x.val), 0);
     document.getElementById('mine-week-total').textContent = weekTotal;
-    document.getElementById('mine-week-streak').textContent = state.streak;
     document.getElementById('mine-week-best').textContent = weekBest;
 
     const max = Math.max(weekBest, 1);
@@ -3434,10 +3451,81 @@
     const now = new Date();
     return Math.max(0, (now.getFullYear() - y) * 12 + (now.getMonth() + 1 - m));
   }
+  // 補登：家長把過去某一天有做到的今日小任務打勾，橡實加進現在的總數；不限日期。
+  // 補登的紀錄標 backfilled，月曆上那天右上角會有小橘點
+  function openBackfillModal(dayKey) {
+    const [y, m, d] = dayKey.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const week = ['日','一','二','三','四','五','六'][date.getDay()];
+    const log = state.log[dayKey] || {};
+    const picked = new Set(state.habits.filter(hb => isLogDone(log[hb.id])).map(hb => hb.id));
+    const check = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>';
+    const pointsOf = (hb) => isLogDone(log[hb.id]) ? logEarnedPoints(hb, log[hb.id]) : habitBasePoints(hb);
+    openModal(`
+      <h3 class="modal-title">補登 ${m}月${d}日（${week}）</h3>
+      <p class="modal-sub">把那天有做到的任務打勾，橡實會加進現在的總數。</p>
+      <div class="bf-list">
+        ${state.habits.map(hb => `
+          <button type="button" class="bf-row" data-bf-habit="${escAttr(hb.id)}">
+            <span class="bf-icon">${iconSvg(hb.icon, 20, '#5E5453')}</span>
+            <span class="bf-text">
+              <b>${escHtml(hb.title)}${log[hb.id] && log[hb.id].backfilled ? '<span class="bf-tag">補登</span>' : ''}</b>
+              <small>+${pointsOf(hb)} 顆橡實</small>
+            </span>
+            <span class="bf-check">${check}</span>
+          </button>
+        `).join('') || '<div class="empty">還沒有今日小任務</div>'}
+      </div>
+      <div class="bf-sum"><span>這天合計</span><span><b id="bf-total">0</b> 顆橡實</span></div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button type="button" class="btn" data-cancel>取消</button>
+        <button type="button" class="btn btn-primary" data-bf-save>儲存</button>
+      </div>
+    `);
+    const root = document.getElementById('modal');
+    const refresh = () => {
+      root.querySelectorAll('[data-bf-habit]').forEach(row => row.classList.toggle('done', picked.has(row.dataset.bfHabit)));
+      const total = state.habits.filter(hb => picked.has(hb.id)).reduce((sum, hb) => sum + pointsOf(hb), 0);
+      root.querySelector('#bf-total').textContent = total;
+    };
+    root.querySelectorAll('[data-bf-habit]').forEach(row => {
+      row.onclick = () => {
+        const id = row.dataset.bfHabit;
+        if (picked.has(id)) picked.delete(id); else picked.add(id);
+        refresh();
+      };
+    });
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('[data-bf-save]').onclick = () => {
+      const next = { ...(state.log[dayKey] || {}) };
+      let delta = 0;
+      state.habits.forEach(hb => {
+        const was = isLogDone(next[hb.id]);
+        const now = picked.has(hb.id);
+        if (now && !was) {
+          const pts = habitBasePoints(hb);
+          next[hb.id] = { done: true, points: pts, backfilled: true, completedAt: new Date().toISOString() };
+          delta += pts;
+        } else if (!now && was) {
+          delta -= logEarnedPoints(hb, next[hb.id]);
+          delete next[hb.id];
+        }
+      });
+      state.log[dayKey] = next;
+      state.points = Math.max(0, state.points + delta);
+      save();
+      closeModal();
+      renderMine();
+      if (delta) toast(delta > 0 ? `補登 +${delta} 顆橡實` : `已修正 ${delta} 顆橡實`);
+    };
+    refresh();
+  }
+
   function renderCalendar() {
     const wrap = document.getElementById('mine-calendar');
     if (!wrap) return;
-    const maxBack = earliestRecordMonthsBack();
+    // 至少能往回翻 12 個月，家長才能補登更早的紙本紀錄
+    const maxBack = Math.max(earliestRecordMonthsBack(), 12);
     calendarMonthsBack = Math.min(Math.max(0, calendarMonthsBack), maxBack);
     const shown = new Date();
     shown.setDate(1);
@@ -3482,7 +3570,9 @@
       const score = dayScores[k];
       const lv = levelOf(score);
       const isToday = k === todayStr;
-      cells += `<div class="mine-cal-day ${lv} ${isToday ? 'today' : ''}" title="${score} 顆">${d}</div>`;
+      const isPast = k < todayStr;
+      const backfilled = Object.values(state.log[k] || {}).some(v => v && v.backfilled);
+      cells += `<div class="mine-cal-day ${lv} ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}" title="${score} 顆"${isPast ? ` data-backfill-day="${k}"` : ''}>${d}${backfilled ? '<span class="cal-backfill-dot" aria-label="有補登"></span>' : ''}</div>`;
     }
 
     wrap.innerHTML = `
@@ -3497,7 +3587,15 @@
         </div>
       </div>
       <div class="mine-cal-grid">${cells}</div>
+      <div class="cal-backfill-hint"><i></i>有補登的日子<span class="cal-backfill-parent">　·　點過去的日子可以補登</span></div>
     `;
+    // 家長模式點過去的日子：補登那天的今日小任務
+    wrap.querySelectorAll('[data-backfill-day]').forEach(cell => {
+      cell.onclick = () => {
+        if (!document.body.classList.contains('parent-mode')) return;
+        openBackfillModal(cell.dataset.backfillDay);
+      };
+    });
     wrap.querySelector('[data-cal-prev]').onclick = () => { calendarMonthsBack += 1; renderCalendar(); };
     wrap.querySelector('[data-cal-next]').onclick = () => { calendarMonthsBack -= 1; renderCalendar(); };
   }
@@ -3760,6 +3858,7 @@
   const NEWS_INTERVAL = 10000;
   function newsItems() {
     return [
+      { id: 'backfill-2026', badge: '新功能', text: '忘記勾的日子，可以補登了！', open: openBackfillNewsModal },
       { id: 'special-stickers-2026', badge: '新功能', text: '節慶限定貼紙和生日週來了！', open: openStickerNewsModal },
       { id: 'app-coming-2026', badge: 'NEW', text: '松鼠橡實 App 版即將推出！', webOnly: true, open: openAppTeaserModal }
     ];
@@ -3821,6 +3920,29 @@
     show();
     restart();
   }
+  function openBackfillNewsModal() {
+    openModal(`
+      <h3 class="modal-title">忘記勾的日子，可以補登了</h3>
+      <div class="about-body">
+        <p>有時候孩子做了，但當天忘記在 App 上打勾，或是先記在紙上，現在可以補回來。</p>
+        <p>點右上角鎖頭進家長模式，到「我的」頁的月曆，點那一天，把有做到的今日小任務打勾後按儲存，橡實會加進現在的總數。日期不限，多久以前都可以補。</p>
+        <p>補登過的日子，月曆上右上角會有一個小橘點。</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" data-cancel>知道了</button>
+        <button type="button" class="btn btn-primary" data-go-calendar>去看月曆</button>
+      </div>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('[data-go-calendar]').onclick = () => {
+      closeModal();
+      showScreen('screen-mine');
+      if (typeof renderMine === 'function') renderMine();
+      setTimeout(() => document.getElementById('mine-calendar').scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+    };
+  }
+
   function openStickerNewsModal() {
     openModal(`
       <h3 class="modal-title">節慶限定貼紙和生日週</h3>
@@ -4061,8 +4183,6 @@
   };
 
   /* ---------- init ---------- */
-  dailyReset();
-  refreshStreak();
   scheduleNativeReminderSync();
   // App 開著時收到放學提醒通知：系統橫幅不出聲（capacitor.config presentationOptions），改由 App 自己響鬧鐘聲
   const reminderNotifications = nativeNotifications();
