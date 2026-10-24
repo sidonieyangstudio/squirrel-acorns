@@ -1550,7 +1550,6 @@
     const ticketGate = document.getElementById('after-school-ticket-gate');
     const ticketSub = document.getElementById('after-school-ticket-sub');
     const ticketTitle = document.getElementById('after-school-ticket-title');
-    const ticketReminder = document.getElementById('after-school-ticket-reminder');
 
     document.getElementById('after-school-child-name').textContent = `嗨！${childName()}`;
     document.getElementById('after-school-now').textContent = `現在 ${formatClock()}`;
@@ -1562,13 +1561,6 @@
       ? `${ticketName}條件都完成了`
       : `已完成 ${status.gameTicket.doneCount}/${status.gameTicket.totalCount}`;
     renderTicketSteps(plan, log);
-    const reminderPhases = plan.filter(phase => (phase.id === 'ticket' || phase.id === 'evening') && phase.reminderTime);
-    ticketReminder.innerHTML = reminderPhases.map(phase => {
-      const done = isAfterSchoolPhaseDone(phase, log);
-      const due = !done && isAfterSchoolReminderDue(phase.reminderTime);
-      const text = `${stripPhasePrefix(phase.title)} ${formatClockShort(phase.reminderTime)} ${done ? '已完成' : (due ? '提醒時間到了' : '提醒')}`;
-      return `<span class="ticket-reminder-pill${due ? ' alert' : ''}">${escHtml(text)}</span>`;
-    }).join('');
     // 門票任務全部完成：換成歡呼的松鼠＋「拿到門票」；進行中維持「準備中」
     ticketGate.innerHTML = status.gameTicket.done
       ? '<img class="ticket-gate-squirrel" src="assets/squirrel-cheer.webp" alt="" /><span>拿到門票</span>'
