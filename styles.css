@@ -176,7 +176,7 @@ body.on-unlock #dock { display: none; }
   background: radial-gradient(circle, rgba(218,132,79,0.16) 0%, transparent 60%);
   border-radius: 50%;
 }
-.greet-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-top: 12px; padding-right: 36px; }
+.greet-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-top: 4px; padding-right: 36px; }
 body.parent-mode .greet-row { padding-right: 0; }
 .greet-copy { min-width: 0; flex: 1; }
 .greet-date {
@@ -201,8 +201,9 @@ body.parent-mode .greet-row { padding-right: 0; }
 }
 .header-tools .child-profile-btn { margin-top: 8px; }
 /* 家長模式多了「孩子檔案」，整排放在日期上方，標題區只在家長模式往下多留一點空間 */
-body.parent-mode .today-header { padding-top: 60px; }
-body.parent-mode .header-tools { top: 2px; }
+body.parent-mode .today-header { padding-top: 72px; }
+/* 家長模式上方橘色橫幅約 30px 高（#app 只讓出 24px），這一排再往下讓開 */
+body.parent-mode .header-tools { top: 14px; }
 .squirrel-wrap {
   display: flex; justify-content: center; margin-top: -46px; margin-bottom: -4px;
   position: relative;
@@ -588,7 +589,8 @@ body.parent-mode .header-tools { top: 2px; }
   color: var(--white);
   border-bottom-left-radius: 32px;
   border-bottom-right-radius: 32px;
-  padding: calc(env(safe-area-inset-top) + 18px) 18px 18px;
+  /* body 已留瀏海安全距離，這裡不再重複加 */
+  padding: 18px 18px 18px;
   position: relative;
 }
 .after-school-back {
@@ -605,7 +607,7 @@ body.parent-mode .header-tools { top: 2px; }
 .after-school-time {
   position: absolute;
   right: 58px;
-  top: calc(env(safe-area-inset-top) + 16px);
+  top: 16px;
   background: var(--white);
   color: var(--lotus-deep);
   border-radius: var(--pill);
@@ -616,7 +618,7 @@ body.parent-mode .header-tools { top: 2px; }
 }
 .after-school-settings-btn {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 17px);
+  top: 20px;
   right: 18px;
   background: rgba(255,255,255,.18);
   border-color: rgba(255,255,255,.55);
@@ -899,7 +901,8 @@ body.parent-mode .header-tools { top: 2px; }
 .page-header {
   background: var(--lotus); color: var(--white);
   border-bottom-left-radius: 32px; border-bottom-right-radius: 32px;
-  padding: calc(env(safe-area-inset-top) + 18px) 18px 18px;
+  /* body 已留瀏海安全距離，這裡不再重複加 */
+  padding: 18px 18px 18px;
 }
 .page-header-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-right: 40px; }
 .page-header-row .btn {
@@ -1657,8 +1660,11 @@ body.child-mode [data-delete-reward] { display: none !important; }
   padding: 22px 20px calc(env(safe-area-inset-bottom) + 22px);
   box-shadow: 0 -16px 40px rgba(94,84,83,0.16);
   animation: slide-up .3s var(--ease);
-  /* 最多佔螢幕約 2/3，上方留 1/3 背景，點背景就關掉（app.js modal-backdrop click） */
-  max-height: 67vh; max-height: 67dvh; overflow-y: auto;
+  /* 上方固定留約 110 點背景可以點（點背景就關掉，app.js modal-backdrop click）；
+     SE 約佔 80%、Pro Max 約 82%，編輯時不會太擠 */
+  max-height: calc(100vh - env(safe-area-inset-top) - 110px);
+  max-height: calc(100dvh - env(safe-area-inset-top) - 110px);
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 /* 視窗變矮後內容要捲動，取消／儲存按鈕固定在視窗底部，不用捲到最下面才按得到 */
@@ -1669,6 +1675,10 @@ body.child-mode [data-delete-reward] { display: none !important; }
   margin-left: -20px; margin-right: -20px;
   padding: 14px 20px 6px;
   background: linear-gradient(to bottom, rgba(255,255,255,0) 0, var(--white) 14px);
+}
+/* 鍵盤打開等可用高度很矮時，2/3 太擠，視窗可以長到 92% */
+@media (max-height: 560px) {
+  .modal { max-height: 92vh; max-height: 92dvh; }
 }
 /* 按鈕下方補一條白底，蓋住視窗底部留白處露出的內容 */
 .modal .modal-actions::after {
