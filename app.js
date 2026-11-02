@@ -15,6 +15,9 @@
   // App 版（iOS）和網頁版共用同一份程式；有些畫面只在其中一邊出現
   const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
   const APP_TEASER_KEY = 'squirrel-app-teaser-dismissed-v1';
+  // 網頁版上架公告：按「繼續用網頁版」後不再跳出
+  const APP_LAUNCH_SEEN_KEY = 'squirrel-app-launch-seen-v1';
+  const APP_STORE_URL = 'https://apps.apple.com/tw/app/id6825983314';
   let isFirstRun = false;
   try { isFirstRun = !localStorage.getItem(KEY) && !localStorage.getItem(KEY_OLD); } catch (e) {}
   const todayKey = () => {
@@ -3865,7 +3868,7 @@
     const close = () => { el.hidden = true; document.body.classList.remove('on-welcome'); };
     // 按開始就先存一次，下次打開才不會又看到歡迎畫面
     el.querySelectorAll(isNativeApp ? '[data-web-only]' : '[data-app-only]').forEach(b => { b.hidden = true; });
-    el.querySelector('[data-welcome-start]').onclick = () => { saveAll(); close(); };
+    el.querySelector('[data-welcome-start]').onclick = () => { saveAll(); close(); maybeShowAppLaunch(); };
     const fileInput = el.querySelector('[data-welcome-file]');
     el.querySelector('[data-welcome-import]').onclick = () => fileInput.click();
     el.querySelector('[data-welcome-restore]').onclick = () => fileInput.click();
@@ -3883,9 +3886,9 @@
   const NEWS_INTERVAL = 10000;
   function newsItems() {
     return [
+      { id: 'app-launched-2026', badge: 'App', text: '松鼠橡實有 iPhone App 版了！', webOnly: true, open: openAppLaunchModal },
       { id: 'backfill-2026', badge: '新功能', text: '忘記勾的日子，可以補登了！', open: openBackfillNewsModal },
-      { id: 'special-stickers-2026', badge: '新功能', text: '節慶限定貼紙和生日週來了！', open: openStickerNewsModal },
-      { id: 'app-coming-2026', badge: 'NEW', text: '松鼠橡實 App 版即將推出！', webOnly: true, open: openAppTeaserModal }
+      { id: 'special-stickers-2026', badge: '新功能', text: '節慶限定貼紙和生日週來了！', open: openStickerNewsModal }
     ];
   }
   function dismissedNews() {
@@ -3989,20 +3992,36 @@
       setTimeout(() => document.getElementById('mine-sticker-list').scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
     };
   }
-  function openAppTeaserModal() {
+  // 網頁版上架公告：開啟網頁版時跳一次；首頁小橫幅點開也是這個畫面
+  function maybeShowAppLaunch() {
+    if (isNativeApp) return;
+    try { if (localStorage.getItem(APP_LAUNCH_SEEN_KEY) === '1') return; } catch (e) {}
+    openAppLaunchModal();
+  }
+  function openAppLaunchModal() {
     openModal(`
-      <h3 class="modal-title">松鼠橡實 App 版即將推出</h3>
-      <div class="about-body">
-        <p>我們正在把松鼠橡實做成 iPhone App，推出時這裡會通知你。</p>
-        <p>現在可以先做一件事：到「我的小本本」最下面按「備份資料」，存一份到「檔案」。以後改用 App 版或換手機，點數、任務和紀錄都能一起搬過去。</p>
+      <div class="app-launch-head">
+        <img class="app-launch-icon" src="icons/icon-192.png" alt="">
+        <div class="app-launch-head-text">
+          <h3 class="modal-title">松鼠橡實 iPhone App 上架了</h3>
+          <p>現在可以到 App Store 免費下載松鼠橡實。</p>
+        </div>
       </div>
-      <div class="modal-actions">
-        <button type="button" class="btn" data-cancel>知道了</button>
-        <button type="button" class="btn btn-primary" data-go-backup>去備份</button>
+      <div class="about-body">
+        <p>想把資料搬到 App：先在這裡按「備份資料」存一份到「檔案」，再打開 App 選「我用過網頁版，把資料搬過來」，點數、任務和紀錄都會一起過去。</p>
+        <p>想繼續用網頁版也可以，這裡照常使用。目前 App 只有 iPhone 版，其他手機請繼續用網頁版。</p>
+      </div>
+      <div class="app-launch-actions">
+        <a class="btn btn-primary btn-block" href="${APP_STORE_URL}" target="_blank" rel="noopener noreferrer">去 App Store 下載</a>
+        <button type="button" class="btn btn-block" data-go-backup>先備份資料</button>
+        <button type="button" class="btn btn-ghost btn-block" data-keep-web>繼續用網頁版</button>
       </div>
     `);
     const root = document.getElementById('modal');
-    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('[data-keep-web]').onclick = () => {
+      try { localStorage.setItem(APP_LAUNCH_SEEN_KEY, '1'); } catch (e) {}
+      closeModal();
+    };
     root.querySelector('[data-go-backup]').onclick = () => {
       closeModal();
       showScreen('screen-mine');
@@ -4153,6 +4172,7 @@
   document.getElementById('btn-mine-backup').onclick = exportBackup;
   setupWelcome();
   setupNewsBar();
+  if (!isFirstRun) maybeShowAppLaunch();
   document.getElementById('parent-banner').onclick = () => { if (parentMode) openChangePinModal(); };
 
   document.getElementById('btn-go-today').onclick     = () => goToScreen('today');
