@@ -3818,25 +3818,51 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('備份檔已下載 ★');
   }
+  // 還原的提示與確認都用 App 自己的彈出視窗，不用系統 alert／confirm：
+  // iOS App 剛關掉「檔案」選擇畫面時，系統確認框可能跳不出來，App 會一直等那個按鈕而整個卡住（1.0 上架後回報）
+  function showBackupMessage(message) {
+    openModal(`
+      <h3 class="modal-title">沒辦法還原</h3>
+      <div class="about-body"><p>${escHtml(message)}</p></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-cancel>知道了</button>
+      </div>
+    `);
+    document.getElementById('modal').querySelector('[data-cancel]').onclick = closeModal;
+  }
   async function importBackup(file) {
     let text = '';
     try {
       text = await file.text();
     } catch (e) {
-      alert('檔案讀不出來，請重新選擇。');
+      showBackupMessage('檔案讀不出來，請重新選擇。');
       return;
     }
     const result = window.SquirrelBackup.parseBackup(text);
     if (!result.ok) {
-      alert(result.error);
+      showBackupMessage(result.error);
       return;
     }
     const when = result.exportedAt ? new Date(result.exportedAt).toLocaleString('zh-TW') : '不明時間';
-    if (!confirm(`要用這份備份還原嗎？\n\n備份時間：${when}\n孩子人數：${result.childCount} 位\n\n現在這台裝置上的任務、點數、獎勵和紀錄會被備份內容取代。家長密碼維持不變。`)) return;
-    appState.children = result.data.children;
-    appState.activeChildId = result.data.activeChildId;
-    saveAll();
-    window.location.reload();
+    openModal(`
+      <h3 class="modal-title">要用這份備份還原嗎？</h3>
+      <div class="about-body">
+        <p>備份時間：${escHtml(when)}<br>孩子人數：${result.childCount} 位</p>
+        <p>現在這台裝置上的任務、點數、獎勵和紀錄會被備份內容取代。家長密碼維持不變。</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" data-cancel>取消</button>
+        <button type="button" class="btn btn-primary" data-restore-ok>還原</button>
+      </div>
+    `);
+    const root = document.getElementById('modal');
+    root.querySelector('[data-cancel]').onclick = closeModal;
+    root.querySelector('[data-restore-ok]').onclick = () => {
+      appState.children = result.data.children;
+      appState.activeChildId = result.data.activeChildId;
+      saveAll();
+      window.location.reload();
+    };
   }
   function openBackupHelpModal() {
     openModal(`

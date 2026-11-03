@@ -2340,6 +2340,8 @@ body.child-mode [data-delete-reward] { display: none !important; }
 .welcome { position: fixed; inset: 0; z-index: 900; background: var(--cream, #FFF3EE); display: grid; place-items: center; padding: 24px 16px; overflow-y: auto; }
 .welcome[hidden] { display: none; }
 body.on-welcome { overflow: hidden; }
+/* 歡迎畫面上開的彈出視窗（備份說明、還原確認）要蓋在歡迎畫面上面 */
+body.on-welcome .modal-backdrop { z-index: 1000; }
 .welcome-inner { width: 100%; max-width: 360px; text-align: center; }
 .welcome-icon { width: 120px; height: 120px; border-radius: 28px; box-shadow: 0 12px 28px rgba(94,84,83,0.16); animation: breathe 3.2s ease-in-out infinite; }
 .welcome-title { font-size: 28px; font-weight: 800; color: var(--ink); margin: 22px 0 6px; letter-spacing: 0.06em; }
