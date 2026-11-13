@@ -1428,6 +1428,88 @@
     if (hasActiveTimer) todayCountdownTimer = setInterval(renderToday, 1000);
   }
 
+  /* 2026-11-12 首頁最上面改放「換孩子」（原本是日期）。
+     參考「看見你的好」App：選到的孩子＝圓圈＋名字＋橘框，其他孩子只放淡淡的圓圈，點一下就換。
+     圓圈裡是名字最後一個字。renderToday 計時中每秒會跑，內容沒變就不重畫，避免左右滑的位置被拉回去。 */
+  const KID_COLORS = [
+    { bg: '#DA844F', fg: '#FEFBF9' },
+    { bg: '#C78E78', fg: '#FEFBF9' },
+    { bg: '#EBB95E', fg: '#5E5453' },
+    { bg: '#A4AE92', fg: '#FEFBF9' }
+  ];
+  function kidAvatarEl(child, index) {
+    const c = KID_COLORS[index % KID_COLORS.length];
+    const av = document.createElement('span');
+    av.className = 'kid-av';
+    av.style.background = c.bg;
+    av.style.color = c.fg;
+    const name = String(child.userName || '').trim();
+    av.textContent = name ? [...name].slice(-1)[0] : '寶';
+    av.setAttribute('aria-hidden', 'true');
+    return av;
+  }
+  function renderKidSwitch() {
+    const box = document.getElementById('kid-switch');
+    if (!box) return;
+    const kids = appState.children || [];
+    const sig = kids.map(k => `${k.id}:${k.userName || ''}`).join('|') + '#' + appState.activeChildId;
+    if (box.dataset.sig === sig) { fitKidSwitch(box); return; }
+    box.dataset.sig = sig;
+    box.textContent = '';
+    kids.forEach((child, index) => {
+      const name = String(child.userName || '').trim() || '小朋友';
+      if (child.id === appState.activeChildId) {
+        const cur = document.createElement('span');
+        cur.className = 'kid-cur';
+        cur.setAttribute('aria-label', `現在：${name}`);
+        cur.appendChild(kidAvatarEl(child, index));
+        const label = document.createElement('span');
+        label.className = 'kid-cur-name';
+        label.textContent = name;
+        cur.appendChild(label);
+        box.appendChild(cur);
+      } else {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'kid-sw';
+        btn.setAttribute('aria-label', `換成 ${name}`);
+        btn.appendChild(kidAvatarEl(child, index));
+        btn.onclick = () => switchKidFromHome(child.id);
+        box.appendChild(btn);
+      }
+    });
+    fitKidSwitch(box);
+    const cur = box.querySelector('.kid-cur');
+    if (cur && box.scrollWidth > box.clientWidth) {
+      const a = box.getBoundingClientRect(), b = cur.getBoundingClientRect();
+      if (b.right > a.right - 16) box.scrollLeft += b.right - (a.right - 16);
+      else if (b.left < a.left) box.scrollLeft -= a.left - b.left;
+    }
+  }
+  // 放不下時：先把選到的孩子收成「只有圓圈＋橘框」（名字下面「嗨 名字！」已經有），
+  // 還是放不下才左右滑，右邊淡出提示。畫面沒顯示時量不到寬度，就先不動。
+  function fitKidSwitch(box) {
+    if (!box.clientWidth) return;
+    box.classList.remove('is-compact', 'is-scroll');
+    if (box.scrollWidth > box.clientWidth + 1) box.classList.add('is-compact');
+    if (box.scrollWidth > box.clientWidth + 1) box.classList.add('is-scroll');
+  }
+  window.addEventListener('resize', () => {
+    const kidBox = document.getElementById('kid-switch');
+    if (kidBox) fitKidSwitch(kidBox);
+  });
+  function switchKidFromHome(id) {
+    if (id === appState.activeChildId) return;
+    const next = appState.children.find(child => child.id === id);
+    if (!next) return;
+    appState.activeChildId = next.id;
+    state = activeChildState();
+    removeLegacyDefaultHabits(state);
+    save();
+    refreshCurrentScreen();
+    toast(`換成 ${state.userName || '小朋友'}`);
+  }
+
   function renderBirthdayGreeting() {
     const sub = document.getElementById('greet-sub');
     if (!sub || !reflectionRules) return;
@@ -1509,10 +1591,7 @@
 
     // header
     document.getElementById('user-name').textContent = childName();
-    const d = new Date();
-    const week = ['日','一','二','三','四','五','六'][d.getDay()];
-    document.getElementById('today-date').textContent =
-      `${d.getMonth()+1}月${d.getDate()}日 · 星期${week}`;
+    renderKidSwitch();
     scheduleTodayCountdown();
   }
 
@@ -3661,6 +3740,9 @@
     document.body.classList.toggle('child-mode', !on);
     const banner = document.getElementById('parent-banner');
     if (banner) banner.hidden = !on;
+    // 家長模式多了「孩子檔案」按鈕，換孩子那一排變窄，要重新量一次
+    const kidBox = document.getElementById('kid-switch');
+    if (kidBox) fitKidSwitch(kidBox);
   }
   function shakeModal() {
     const m = document.getElementById('modal');
